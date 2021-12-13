@@ -1,0 +1,30 @@
+cmake_minimum_required(VERSION 3.10.2)
+project(render)
+
+link_directories(../sim/)
+include_directories(../sim/)
+
+add_compile_options(-fPIC)
+add_compile_options(-std=gnu++11)
+add_compile_options(-Wdeprecated-declarations)
+
+find_package(OpenGL REQUIRED)
+find_package(GLUT REQUIRED)
+find_package(GLEW REQUIRED)
+
+find_package(DART REQUIRED COMPONENTS collision-bullet CONFIG)
+find_package(PythonLibs REQUIRED)
+find_package(pybind11 REQUIRED)
+
+include_directories(${DART_INCLUDE_DIRS})
+include_directories(${PYTHON_INCLUDE_DIR})
+include_directories(${OPENGL_INCLUDE_DIR})
+include_directories(${GLUT_INCLUDE_DIR})
+include_directories(${GLEW_INCLUDE_DIR})
+# file(GLOB srcs )
+# set(COMCON_LIBRARY ${PROJECT_SOURCE_DIR}/../sim/comcon.so)
+# message(${COMCON_LIBRARY})
+file(GLOB srcs "*.h" "*.cpp")
+add_executable(render ${srcs})
+# target_link_libraries(render ${DART_LIBRARIES} ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES} ${GLEW_LIBRARIES} ${COMCON_LIBRARY} ${PYTHON_LIBRARIES} pybind11::module)
+target_link_libraries(render ${DART_LIBRARIES} ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES} ${GLEW_LIBRARIES} comcon ${PYTHON_LIBRARIES} pybind11::module pybind11::embed)

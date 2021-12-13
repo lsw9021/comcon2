@@ -1,0 +1,13 @@
+build/
+*.so
+*.a
+data/learning/
+data/named_learning/
+data/png/
+*/*.pt
+*.pyc
+.tags
+.tags_sorted_by_file
+*.json
+*.out
+*/*.out

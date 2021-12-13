@@ -1,0 +1,100 @@
+HIERARCHY
+ROOT simHips
+{
+  OFFSET -68.3785 100.059 260.003
+  CHANNELS 6 Xposition Yposition Zposition Zrotation Xrotation Yrotation
+  JOINT simSpine
+  {
+    OFFSET -0.000354287 21.3001 -0.0169239
+    CHANNELS 3 Zrotation Xrotation Yrotation
+    JOINT simLeftArm
+    {
+      OFFSET 13.5181 21.3012 0
+      CHANNELS 3 Zrotation Xrotation Yrotation
+      JOINT simLeftForeArm
+      {
+        OFFSET 24.5783 0 1.00687e-005
+        CHANNELS 3 Zrotation Xrotation Yrotation
+        JOINT simLeftHand
+        {
+          OFFSET 24.5783 0 0
+          CHANNELS 3 Zrotation Xrotation Yrotation
+          End Site
+          {
+            OFFSET 7.32568 1.52588e-005 0.0169305
+          }
+        }
+      }
+    }
+    JOINT simHead
+    {
+      OFFSET 0 27.4458 -0.004888
+      CHANNELS 3 Zrotation Xrotation Yrotation
+      End Site
+      {
+        OFFSET 0 0 0
+      }
+    }
+    JOINT simRightArm
+    {
+      OFFSET -13.5174 21.3012 0
+      CHANNELS 3 Zrotation Xrotation Yrotation
+      JOINT simRightForeArm
+      {
+        OFFSET -24.5783 -3.50495e-005 0
+        CHANNELS 3 Zrotation Xrotation Yrotation
+        JOINT simRightHand
+        {
+          OFFSET -24.5783 -1.48483e-005 0
+          CHANNELS 3 Zrotation Xrotation Yrotation
+          End Site
+          {
+            OFFSET -7.32568 1.52588e-005 0.0169305
+          }
+        }
+      }
+    }
+  }
+  JOINT simRightUpLeg
+  {
+    OFFSET -8.44614 -9.41038 0.835685
+    CHANNELS 3 Zrotation Xrotation Yrotation
+    JOINT simRightLeg
+    {
+      OFFSET 9.38052e-005 -40.9639 0.000210361
+      CHANNELS 3 Zrotation Xrotation Yrotation
+      JOINT simRightFoot
+      {
+        OFFSET 0 -40.9639 0
+        CHANNELS 3 Zrotation Xrotation Yrotation
+        End Site
+        {
+          OFFSET 0.50614 -9.67405 14.6709
+        }
+      }
+    }
+  }
+  JOINT simLeftUpLeg
+  {
+    OFFSET 8.44614 -9.41038 0.835688
+    CHANNELS 3 Zrotation Xrotation Yrotation
+    JOINT simLeftLeg
+    {
+      OFFSET 0 -40.9639 0
+      CHANNELS 3 Zrotation Xrotation Yrotation
+      JOINT simLeftFoot
+      {
+        OFFSET 0 -40.9639 0
+        CHANNELS 3 Zrotation Xrotation Yrotation
+        End Site
+        {
+          OFFSET -0.50614 -9.67405 14.6709
+        }
+      }
+    }
+  }
+}
+MOTION
+Frames:	1
+Frame Time:	0.0333333
+10.0456 100.141 7.12148 0 0 -1.10409e-008 -0 0 1.10409e-008 6.83019e-006 -1.70755e-006 6.83019e-006 -3.49197e-006 -6.83019e-006 -1.16332e-005 -3.33713e-006 0.00287337 -2.17682e-005 -0 0 4.66907e-008 6.83019e-006 -4.26887e-007 3.41509e-006 -2.97197e-006 -4.26887e-007 4.67951e-006 -3.85929e-006 0.00825914 7.46751e-006 0.119562 1.48244 -0.00154218 3.72121e-006 0.525468 -0.000338401 -0.119307 -2.0079 0.00693088 -0.309976 0.895294 0.00326695 -0.000102578 0.802697 0.000795328 0.309594 -1.69161 -0.0150642

@@ -1,0 +1,7 @@
+skel humanoid
+node Spine
+parent None
+shape Sphere
+mass 15.0
+radius 0.0916
+contact false

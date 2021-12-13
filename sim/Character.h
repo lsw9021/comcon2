@@ -1,0 +1,74 @@
+#ifndef __CHARACTER_H__
+#define __CHARACTER_H__
+#include "dart/dart.hpp"
+#include "kinematics/kinematics.h"
+
+class Character
+{
+public:
+	Character(dart::dynamics::SkeletonPtr& skel);
+	void reset(const Eigen::VectorXd& p, const Eigen::VectorXd& v);
+
+	void addEndEffector(const std::string& bn_name);
+	void addKinematicMap(int sid, int kid);
+	void setPDGain(const std::string& sim_body_name, double kp);
+	void setMaxForces(const std::string& sim_body_name, double mf);
+	
+
+	Eigen::Isometry3d getReferenceTransform();
+
+	void computeSimPose(const Eigen::Vector3d& position,
+						const Eigen::MatrixXd& rotation,
+						Eigen::VectorXd& p);
+
+	void computeSimPoseAndVel(const Eigen::Vector3d& position,
+							const Eigen::MatrixXd& rotation,
+							const Eigen::Vector3d& linear_velocity,
+							const Eigen::MatrixXd& angular_velocity,
+							Eigen::VectorXd& p,
+							Eigen::VectorXd& v);
+
+	
+	void actuate(const Eigen::VectorXd& action);
+
+	const Eigen::Vector3d& getDHat(){return mdHat;}
+	void setDHat(const Eigen::Vector3d& dhat){mdHat = dhat;}
+	Eigen::Matrix3d computeStiffnessMatrix(dart::dynamics::BodyNode* bn,
+						const Eigen::Vector3d& offset);
+	void addExternalForce(dart::dynamics::BodyNode* bn,
+						const Eigen::Vector3d& offset,
+						const Eigen::Vector3d& force);
+	void getExternalForce(std::string& bn_name, Eigen::Vector3d& offset, Eigen::Vector3d& force);
+	void step();
+
+	Eigen::VectorXd getPositions();
+	void setPositions(const Eigen::VectorXd& pu);
+	Eigen::VectorXd getState();
+	Eigen::VectorXd getStateAMP(const Eigen::VectorXd& pu_curr, const Eigen::VectorXd& pu_prev);
+
+	void pushState();
+	void popState();
+
+	const Eigen::VectorXd& getU(){return mU;}
+	const Eigen::VectorXd& getdU(){return mdU;}
+
+	dart::dynamics::SkeletonPtr getSkeleton(){return mSkeleton;}
+	const std::map<int, int>& getKinematicMap(){return mKinematicMap;}
+private:
+	dart::dynamics::SkeletonPtr mSkeleton;
+	std::vector<dart::dynamics::BodyNode*> mEndEffectors;
+
+	std::map<int, int> mKinematicMap, mSimMap;
+
+	Eigen::VectorXd mKp, mKv, mMaxForces;
+
+	std::vector<Eigen::VectorXd> mStates;
+
+	bool mAppliedForce;
+	Eigen::VectorXd mU, mdU;
+	Eigen::Vector3d mdHat;
+	Eigen::Vector3d mOffset, mForce;
+	std::string mBodyNodeName;
+};
+
+#endif
