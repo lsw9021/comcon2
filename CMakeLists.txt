@@ -16,4 +16,4 @@ add_definitions(-DROOT_DIR="${CMAKE_HOME_DIRECTORY}")
 
 add_subdirectory( sim )
 add_subdirectory( python )
-add_subdirectory( render )
+#add_subdirectory( render )

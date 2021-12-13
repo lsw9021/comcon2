@@ -2,7 +2,7 @@ import argparse
 import datetime
 import os
 import time
-
+os.environ['OPENBLAS_NUM_THREADS'] = '1'
 import trainer as Trainer
 
 from mpi4py import MPI
