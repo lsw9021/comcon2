@@ -79,11 +79,14 @@ samplePoseFromMotion(
 		Eigen::Vector3d& linear_velocity,
 		Eigen::MatrixXd& angular_velocity,
 		Eigen::Vector3d& position_prev,
-		Eigen::MatrixXd& rotation_prev)
+		Eigen::MatrixXd& rotation_prev,
+		int prefered_motion_frame)
 {
 	int num_frames = mMotions[mid]->getNumFrames();
 
 	int frame = Utils::uniformi(1, num_frames-1);
+	if(prefered_motion_frame>=1)
+		frame = prefered_motion_frame;
 	position = mMotions[mid]->getPosition(frame);
 	rotation = mMotions[mid]->getRotation(frame);
 	linear_velocity = mMotions[mid]->getLinearVelocity(frame);

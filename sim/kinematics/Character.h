@@ -19,7 +19,10 @@ public:
 		Eigen::Vector3d& linear_velocity,
 		Eigen::MatrixXd& angular_velocity,
 		Eigen::Vector3d& position_prev,
-		Eigen::MatrixXd& rotation_prev);
+		Eigen::MatrixXd& rotation_prev,
+		int prefered_motion_frame = -1);
+
+
 	void addMotion(const std::string& bvh_file, int start=-1, int end=-1);
 	void addMotion(const std::string& bvh_file, const std::string& time_line);
 	Motion* getMotion(int i){return mMotions[i];}

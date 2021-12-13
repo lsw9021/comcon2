@@ -15,6 +15,7 @@ Character(SkeletonPtr& skel)
 	mU = Eigen::VectorXd::Zero(n);
 	mdU = Eigen::VectorXd::Zero(n);
 	mdHat = Eigen::Vector3d::Constant(0.0005);
+	mRootdHat = Eigen::Vector3d::Ones();
 }
 void
 Character::
@@ -249,8 +250,8 @@ addExternalForce(dart::dynamics::BodyNode* bn,
 	mdU.tail(n) = h*Jt*Km*M_work_inv*force;
 
 	double root_inv_mass = 0.04;
-	double root_d_hat = 30.0;
-	mdU.head<3>() = h*root_inv_mass*root_d_hat*force;
+	Eigen::Vector3d root_d_hat = 20.0*mRootdHat;
+	mdU.head<3>() = h*root_inv_mass*root_d_hat.cwiseProduct(force);
 
 	mAppliedForce = true;
 	mOffset = offset;
@@ -282,6 +283,7 @@ step()
 		double d = 2.0*std::sqrt(k);
 		Eigen::Vector3d u_bar = mSkeleton->getBodyNode(0)->getCOM();
 		u_bar[0] = 0.0;
+		u_bar[2] += 1.0;
 		Eigen::Vector3d u = mU.head<3>();
 		Eigen::Vector3d du = mdU.head<3>();
 		Eigen::Vector3d fn = -k*(u - u_bar) - d*du;

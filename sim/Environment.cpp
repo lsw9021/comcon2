@@ -11,7 +11,7 @@ Environment::
 Environment()
 	:mWorld(std::make_shared<World>()),
 	mControlHz(30),
-	mSimulationHz(600),
+	mSimulationHz(300),
 	mMaxFrame(300)
 {
 	dart::math::Random::generateSeed(true);
@@ -103,7 +103,7 @@ reset()
 	Eigen::MatrixXd angular_velocity;
 
 	mKinCharacter->samplePoseFromMotion(0,
-		position,rotation,linear_velocity,angular_velocity,position_prev,rotation_prev);
+		position,rotation,linear_velocity,angular_velocity,position_prev,rotation_prev,10);
 
 	Eigen::VectorXd p,v,p_prev;
 
@@ -119,13 +119,15 @@ reset()
 	mTargetBodyNode = mSimCharacter->getSkeleton()->getBodyNode("RightArm");
 	mBodyCenter = mSimCharacter->getReferenceTransform().inverse()*mTargetBodyNode->getCOM();
 
-
+	double dhat = dart::math::Random::uniform<double>(0.0,1.0);
+	// std::cout<<dhat<<std::endl;
+	mSimCharacter->setRootDHat(Eigen::Vector3d::Constant(dhat));
 
 	mRewardPosition = 1.0;
 	mRewardTask = 1.0;
 
 	mForceTimeCount = 270;
-	mForceTime = 30;
+	mForceTime = 15;
 	mForceIdleTime= 300;
 
 	this->updateForceTargetPosition();
@@ -140,7 +142,7 @@ step(const Eigen::VectorXd& action)
 
 	//#1
 	Eigen::Vector3d com = mTargetBodyNode->getCOM();
-	Eigen::Vector3d force = 60.0*mForceTargetPosition;
+	Eigen::Vector3d force = 80.0*mForceTargetPosition;
 	if(mForceTimeCount<mForceTime)
 		mSimCharacter->addExternalForce(mTargetBodyNode, Eigen::Vector3d::Zero(), force);
 	mSimCharacter->step();
@@ -257,62 +259,87 @@ void
 Environment::
 recordState()
 {
-	mState = mSimCharacter->getState();
+	Eigen::VectorXd state = mSimCharacter->getState();
 
 	if(mTask){}
 
-	double tar_speed = 1.0;
-	double pos_err_scale = 0.5;
-	double vel_err_scale = 4 / (tar_speed * tar_speed);
-
-	Eigen::Vector3d tar_pos = mSimCharacter->getU().head<3>();
-	Eigen::Vector3d pos = mSimCharacter->getSkeleton()->getBodyNode(0)->getCOM();
-	Eigen::Vector3d root_tar_delta = tar_pos - pos;
-	root_tar_delta[1] = 0.0;
-	root_tar_delta[2] = 0.0;
-
-	double root_tar_dist_sq = root_tar_delta.squaredNorm();
-	double pos_reward = std::exp(-pos_err_scale * root_tar_dist_sq);
-
-	double vel_reward = 0;
-	double dist_threshold = 0.5;
-
-	if (root_tar_dist_sq < dist_threshold * dist_threshold)
-		vel_reward = 1.0;
-	else
 	{
-		double step_dur = 1.0/30.0;
+		Eigen::Isometry3d T_ref = mSimCharacter->getReferenceTransform();
+		Eigen::Matrix3d R_ref = T_ref.linear();
+		Eigen::Matrix3d R_ref_inv = R_ref.transpose();
 
 		Eigen::Vector3d com = mSimCharacter->getSkeleton()->getCOM();
-		Eigen::Vector3d com_tar_delta = tar_pos - com;
-		com_tar_delta[2] = 0.0;
+		Eigen::Vector3d target_com_vel_local = R_ref_inv*(mSimCharacter->getU().head<3>() - com);
+		Eigen::Vector3d com_vel = (com - mPrevCOM)*mControlHz;
+		com_vel[1] = 0.0;
 
-		com_tar_delta[1] = 0.0;
-		double com_tar_dist = com_tar_delta.norm();
-		Eigen::Vector3d com_tar_dir = Eigen::Vector3d::Zero();
-		if (com_tar_dist > 0.0001)
-			com_tar_dir = com_tar_delta / com_tar_dist;
+		Eigen::Vector3d com_vel_local = R_ref.transpose()*com_vel;
+		Eigen::Vector3d state_position = com_vel_local - target_com_vel_local;
 
-		Eigen::Vector3d com_dir = (com - mPrevCOM) / step_dur;
+		mState.resize(state.rows() + 3);
+		mState<<state, state_position;
 
-		com_dir[2] = 0.0;
-		com_tar_dir[2] = 0.0;
-
-		double avg_vel = com_tar_dir.dot(com_dir);
-		double vel_err = tar_speed - avg_vel;
-
-		if (avg_vel < 0)
-			vel_reward = 0.0;
-		else
+		mRewardPosition = 1.0;
+		// std::cout<<target_com_vel_local.norm()<<std::endl;
+		if(target_com_vel_local.norm()>0.5)
 		{
-			vel_err = std::max(vel_err, 0.0);
-			vel_reward = std::exp(-vel_err_scale * vel_err * vel_err);
+			double vel = (target_com_vel_local - MathUtils::projectOnVector(com_vel_local, target_com_vel_local)).norm();
+			mRewardPosition = std::exp(-1.5*vel*vel);
 		}
-		
 	}
-	mRewardPosition = 0.6 * pos_reward + 0.4 * vel_reward;
-	mRewardPosition = 2.0*mRewardPosition - 1.0;
+	// double tar_speed = 1.0;
+	// double pos_err_scale = 0.5;
+	// double vel_err_scale = 4 / (tar_speed * tar_speed);
+
+	// Eigen::Vector3d tar_pos = mSimCharacter->getU().head<3>();
+	// Eigen::Vector3d pos = mSimCharacter->getSkeleton()->getBodyNode(0)->getCOM();
+	// Eigen::Vector3d root_tar_delta = tar_pos - pos;
+	// root_tar_delta[1] = 0.0;
+	// root_tar_delta[2] = 0.0;
+
+	// double root_tar_dist_sq = root_tar_delta.squaredNorm();
+	// double pos_reward = std::exp(-pos_err_scale * root_tar_dist_sq);
+
+	// double vel_reward = 0;
+	// double dist_threshold = 0.5;
+
+	// if (root_tar_dist_sq < dist_threshold * dist_threshold)
+	// 	vel_reward = 1.0;
+	// else
+	// {
+	// 	double step_dur = 1.0/30.0;
+
+	// 	Eigen::Vector3d com = mSimCharacter->getSkeleton()->getCOM();
+	// 	Eigen::Vector3d com_tar_delta = tar_pos - com;
+	// 	com_tar_delta[2] = 0.0;
+
+	// 	com_tar_delta[1] = 0.0;
+	// 	double com_tar_dist = com_tar_delta.norm();
+	// 	Eigen::Vector3d com_tar_dir = Eigen::Vector3d::Zero();
+	// 	if (com_tar_dist > 0.0001)
+	// 		com_tar_dir = com_tar_delta / com_tar_dist;
+
+	// 	Eigen::Vector3d com_dir = (com - mPrevCOM) / step_dur;
+
+	// 	com_dir[2] = 0.0;
+	// 	com_tar_dir[2] = 0.0;
+
+	// 	double avg_vel = com_tar_dir.dot(com_dir);
+	// 	double vel_err = tar_speed - avg_vel;
+
+	// 	if (avg_vel < 0)
+	// 		vel_reward = 0.0;
+	// 	else
+	// 	{
+	// 		vel_err = std::max(vel_err, 0.0);
+	// 		vel_reward = std::exp(-vel_err_scale * vel_err * vel_err);
+	// 	}
+		
+	// }
+	// mRewardPosition = 0.6 * pos_reward + 0.4 * vel_reward;
+	// mRewardPosition = 2.0*mRewardPosition - 1.0;
 	// mRewardPosition = 1.0;
+
 
 	Eigen::VectorXd s = mSimCharacter->getStateAMP(mPrevPositions,
 												mPrevPositions2);

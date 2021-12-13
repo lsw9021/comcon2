@@ -13,9 +13,9 @@ add_compile_options(-Wdeprecated-declarations)
 
 
 find_package(DART REQUIRED COMPONENTS collision-bullet CONFIG)
-find_package(PythonLibs 3.6 EXACT REQUIRED)
-find_package(PythonInterp 3.6 EXACT REQUIRED)
-#find_package(PythonLibs REQUIRED)
+# find_package(PythonLibs 3.6 EXACT REQUIRED)
+# find_package(PythonInterp 3.6 EXACT REQUIRED)
+find_package(PythonLibs REQUIRED)
 find_package(pybind11 REQUIRED)
 
 include_directories(${DART_INCLUDE_DIRS})

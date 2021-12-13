@@ -35,7 +35,10 @@ public:
 	void updateForceTargetPosition();
 
 	dart::dynamics::BodyNode* getTargetBodyNode(){return mTargetBodyNode;}
-	const Eigen::Vector3d& getForceTargetPosition(){return mForceTargetPosition;}
+	Eigen::Vector3d getForceTargetPosition(){
+		if(mForceTimeCount<mForceTime)
+			return mForceTargetPosition;
+		return Eigen::Vector3d::Zero();}
 private:
 	void recordState();
 

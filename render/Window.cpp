@@ -84,23 +84,25 @@ render()
 	{
 		Eigen::Vector3d end = mEnvironment->getForceTargetPosition();
 		Eigen::Vector3d start = mEnvironment->getTargetBodyNode()->getTransform().translation();
-		glColor4f(0,0,0,1);
-		DrawUtils::drawArrow3D(start, start + end, 0.04);
+		glColor4f(1,0,0,1);
+		DrawUtils::drawArrow3D(start, start + end, 0.1);
 	}
 	
 	{
 		Eigen::Vector3d end = mEnvironment->getSimCharacter()->getU().head<3>();
 		Eigen::Vector3d start = mEnvironment->getSimCharacter()->getSkeleton()->getBodyNode(0)->getCOM();
-		glColor4f(1,0,0,1);
+		glColor4f(0,1,0,1);
 		DrawUtils::drawArrow3D(start, end, 0.08);
 	}
 
-	{
-		Eigen::Vector3d end = Eigen::Vector3d::UnitZ()*100.0;
-		Eigen::Vector3d start = -Eigen::Vector3d::UnitZ()*100.0;
-		glColor4f(0,0,0,1);
-		DrawUtils::drawArrow3D(start, end, 0.2);
-	}
+	
+
+	// {
+	// 	Eigen::Vector3d end = Eigen::Vector3d::UnitZ()*100.0;
+	// 	Eigen::Vector3d start = -Eigen::Vector3d::UnitZ()*100.0;
+	// 	glColor4f(0,0,0,1);
+	// 	DrawUtils::drawArrow3D(start, end, 0.2);
+	// }
 
 	if(mTargetBodyNode!=nullptr)
 	{

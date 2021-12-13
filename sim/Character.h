@@ -33,6 +33,10 @@ public:
 
 	const Eigen::Vector3d& getDHat(){return mdHat;}
 	void setDHat(const Eigen::Vector3d& dhat){mdHat = dhat;}
+
+	const Eigen::Vector3d& getRootDHat(){return mRootdHat;}
+	void setRootDHat(const Eigen::Vector3d& dhat){mRootdHat = dhat;}
+
 	Eigen::Matrix3d computeStiffnessMatrix(dart::dynamics::BodyNode* bn,
 						const Eigen::Vector3d& offset);
 	void addExternalForce(dart::dynamics::BodyNode* bn,
@@ -66,7 +70,7 @@ private:
 
 	bool mAppliedForce;
 	Eigen::VectorXd mU, mdU;
-	Eigen::Vector3d mdHat;
+	Eigen::Vector3d mdHat,mRootdHat;
 	Eigen::Vector3d mOffset, mForce;
 	std::string mBodyNodeName;
 };
