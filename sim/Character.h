@@ -47,6 +47,10 @@ public:
 
 	Eigen::VectorXd getPositions();
 	void setPositions(const Eigen::VectorXd& pu);
+	Eigen::VectorXd computeDisplacedPositions(const Eigen::VectorXd& pu);
+	Eigen::VectorXd computeDisplacedPositions(const Eigen::VectorXd& p, const Eigen::VectorXd& u);
+	Eigen::VectorXd computeOriginalPositions(const Eigen::VectorXd& pu);
+	Eigen::VectorXd computeOriginalPositions(const Eigen::VectorXd& p, const Eigen::VectorXd& u);
 	Eigen::VectorXd getState();
 	Eigen::VectorXd getStateAMP(const Eigen::VectorXd& pu_curr, const Eigen::VectorXd& pu_prev);
 
@@ -68,11 +72,14 @@ private:
 
 	std::vector<Eigen::VectorXd> mStates;
 
+	Eigen::Vector3d mDefaultVelocity;
 	bool mAppliedForce;
 	Eigen::VectorXd mU, mdU;
 	Eigen::Vector3d mdHat,mRootdHat;
 	Eigen::Vector3d mOffset, mForce;
 	std::string mBodyNodeName;
+
+	Eigen::Vector3d mURootBar;
 };
 
 #endif

@@ -14,8 +14,13 @@ Character(SkeletonPtr& skel)
 
 	mU = Eigen::VectorXd::Zero(n);
 	mdU = Eigen::VectorXd::Zero(n);
-	mdHat = Eigen::Vector3d::Constant(0.0005);
+	mdHat = Eigen::Vector3d::Constant(0.0016);
 	mRootdHat = Eigen::Vector3d::Ones();
+	//#0 balance
+	mDefaultVelocity = Eigen::Vector3d(0,0,0.0);
+
+	//#1 walking
+	// mDefaultVelocity = Eigen::Vector3d(0,0,1.4);
 }
 void
 Character::
@@ -29,7 +34,9 @@ reset(const Eigen::VectorXd& p, const Eigen::VectorXd& v)
 
 	int n = mSkeleton->getNumDofs();
 	mU = Eigen::VectorXd::Zero(n);
-	mU.head<3>() = mSkeleton->getBodyNode(0)->getCOM();
+	Eigen::Isometry3d T_ref = this->getReferenceTransform();
+	mU.head<3>() = mSkeleton->getBodyNode(0)->getCOM() + T_ref.linear()*mDefaultVelocity;
+	mURootBar = mU.head<3>();
 	mdU = Eigen::VectorXd::Zero(n);
 	mAppliedForce = false;
 }
@@ -152,17 +159,8 @@ actuate(const Eigen::VectorXd& action)
 	int n = mSkeleton->getNumDofs();
 	Eigen::VectorXd target_position = Eigen::VectorXd::Zero(n);
 	target_position.tail(n-6) = action;
-	for(int i =0;i<mSkeleton->getNumJoints();i++)
-	{
-		if(mSkeleton->getJoint(i)->getType()=="BallJoint")
-		{
-			int idx = mSkeleton->getJoint(i)->getIndexInSkeleton(0);
-			Eigen::Matrix3d R0 = BallJoint::convertToRotation(target_position.segment<3>(idx));
-			Eigen::Matrix3d R1 = BallJoint::convertToRotation(mU.segment<3>(idx));
-			
-			target_position.segment<3>(idx) = BallJoint::convertToPositions(R0*R1);
-		}
-	}
+	Eigen::VectorXd pu = Eigen::VectorXd::Zero(2*n);
+	target_position = this->computeDisplacedPositions(target_position, mU);
 
 	Eigen::VectorXd q = mSkeleton->getPositions();
 	Eigen::VectorXd dq = mSkeleton->getVelocities();
@@ -250,7 +248,7 @@ addExternalForce(dart::dynamics::BodyNode* bn,
 	mdU.tail(n) = h*Jt*Km*M_work_inv*force;
 
 	double root_inv_mass = 0.04;
-	Eigen::Vector3d root_d_hat = 20.0*mRootdHat;
+	Eigen::Vector3d root_d_hat = 60.0*mRootdHat;
 	mdU.head<3>() = h*root_inv_mass*root_d_hat.cwiseProduct(force);
 
 	mAppliedForce = true;
@@ -279,11 +277,11 @@ step()
 	{
 		mdU.setZero();
 		double m = 1.0;
-		double k = 200.0;
+		double k = 100.0;
 		double d = 2.0*std::sqrt(k);
-		Eigen::Vector3d u_bar = mSkeleton->getBodyNode(0)->getCOM();
-		u_bar[0] = 0.0;
-		u_bar[2] += 1.0;
+		Eigen::Vector3d u_bar = mURootBar;
+		u_bar += mDefaultVelocity;
+		// u_bar[0] = 0.0;
 		Eigen::Vector3d u = mU.head<3>();
 		Eigen::Vector3d du = mdU.head<3>();
 		Eigen::Vector3d fn = -k*(u - u_bar) - d*du;
@@ -327,9 +325,11 @@ step()
 				Eigen::Matrix3d R0 = BallJoint::convertToRotation(mU.segment<3>(idx));
 				Eigen::Matrix3d R1 = BallJoint::convertToRotation(h*mdU.segment<3>(idx));
 				
-				// mU.segment<3>(idx) = BallJoint::convertToPositions(R0*R1);
+				mU.segment<3>(idx) = BallJoint::convertToPositions(R0*R1);
+				
 			}
 		}
+		mURootBar = mU.head<3>();
 	}
 	
 		
@@ -352,9 +352,13 @@ void
 Character::
 setPositions(const Eigen::VectorXd& pu)
 {
-	int n = pu.rows()/2;
-	Eigen::VectorXd p = pu.head(n);
-	Eigen::VectorXd u = pu.tail(n);
+	mSkeleton->setPositions(this->computeDisplacedPositions(pu));
+}
+Eigen::VectorXd
+Character::
+computeDisplacedPositions(const Eigen::VectorXd& p, const Eigen::VectorXd& u)
+{
+	Eigen::VectorXd ret = p;
 	for(int i =0;i<mSkeleton->getNumJoints();i++)
 	{
 		if(mSkeleton->getJoint(i)->getType()=="BallJoint")
@@ -363,10 +367,39 @@ setPositions(const Eigen::VectorXd& pu)
 			Eigen::Matrix3d R0 = BallJoint::convertToRotation(p.segment<3>(idx));
 			Eigen::Matrix3d R1 = BallJoint::convertToRotation(u.segment<3>(idx));
 			
-			p.segment<3>(idx) = BallJoint::convertToPositions(R0*R1);
+			ret.segment<3>(idx) = BallJoint::convertToPositions(R0*R1);
 		}
 	}
-	mSkeleton->setPositions(p);
+	return ret;
+}
+Eigen::VectorXd
+Character::
+computeDisplacedPositions(const Eigen::VectorXd& pu)
+{
+	int n = pu.rows()/2;
+	assert(n == mSkeleton->getNumDofs());
+	Eigen::VectorXd p = pu.head(n);
+	Eigen::VectorXd u = pu.tail(n);
+	return this->computeDisplacedPositions(p, u);
+}
+
+
+
+Eigen::VectorXd
+Character::
+computeOriginalPositions(const Eigen::VectorXd& p, const Eigen::VectorXd& u)
+{
+	return this->computeDisplacedPositions(p, -u);
+}
+Eigen::VectorXd
+Character::
+computeOriginalPositions(const Eigen::VectorXd& pu)
+{
+	int n = pu.rows()/2;
+	assert(n == mSkeleton->getNumDofs());
+	Eigen::VectorXd p = pu.head(n);
+	Eigen::VectorXd u = pu.tail(n);
+	return this->computeOriginalPositions(p, u);
 }
 Eigen::VectorXd
 Character::
@@ -380,6 +413,9 @@ getState()
 	int n = mSkeleton->getNumBodyNodes();
 	std::vector<Eigen::Vector3d> ps(n),vs(n),ws(n);
 	std::vector<Eigen::Matrix3d> Rs(n);
+
+	std::vector<Eigen::Vector3d> pus(n);
+	std::vector<Eigen::Matrix3d> Rus(n);
 
 	for(int i=0;i<n;i++)
 	{
@@ -395,20 +431,25 @@ getState()
 	Eigen::Vector3d p_com = T_ref_inv*mSkeleton->getCOM();
 	Eigen::Vector3d v_com = R_ref_inv*mSkeleton->getCOMLinearVelocity();
 
-	int rows = mU.rows();
-	int m = rows/3-1;
-	std::vector<Eigen::Vector3d> us(m);
-	us[0] = T_ref_inv*(mU.head<3>());
-	for(int i=1;i<m;i++) us[i] = mU.segment<3>(i*3+3);
-
-
-	// std::vector<Eigen::Vector3d> states(5*n+2);
-	std::vector<Eigen::Vector3d> states(5*n+2 + m);
+	this->pushState();
+	Eigen::VectorXd q = this->computeOriginalPositions(this->getPositions());
+	mSkeleton->setPositions(q);
+	for(int i=0;i<n;i++)
+	{
+		Eigen::Isometry3d Ti = T_ref_inv * mSkeleton->getBodyNode(i)->getTransform();
+		pus[i] = Ti.translation();
+		Rus[i] = Ti.linear();
+	}
+	this->popState();
+	std::vector<Eigen::Vector3d> states(8*n+2);
 
 	int o = 0;
 	for(int i=0;i<n;i++) states[o+i] = ps[i]; o += n;
+	for(int i=0;i<n;i++) states[o+i] = pus[i]; o += n;
 	for(int i=0;i<n;i++) states[o+i] = Rs[i].col(0); o += n;
 	for(int i=0;i<n;i++) states[o+i] = Rs[i].col(1); o += n;
+	for(int i=0;i<n;i++) states[o+i] = Rus[i].col(0); o += n;
+	for(int i=0;i<n;i++) states[o+i] = Rus[i].col(1); o += n;
 	for(int i=0;i<n;i++) states[o+i] = vs[i]; o += n;
 	for(int i=0;i<n;i++) states[o+i] = ws[i]; o += n;
 	
@@ -416,7 +457,7 @@ getState()
 	states[o+1] = v_com;
 	o += 2;
 
-	for(int i=0;i<m;i++) states[o+i] = us[i];
+	// for(int i=0;i<m;i++) states[o+i] = us[i];
 
 	return MathUtils::ravel(states);
 }
@@ -424,29 +465,9 @@ Eigen::VectorXd
 Character::
 getStateAMP(const Eigen::VectorXd& pu_curr, const Eigen::VectorXd& pu_prev)
 {
-	int m = mSkeleton->getNumDofs();
-	Eigen::VectorXd p_curr, u_curr;
-	Eigen::VectorXd p_prev, u_prev;
-	p_curr = pu_curr.head(m);
-	u_curr = pu_curr.tail(m);
-	p_prev = pu_prev.head(m);
-	u_prev = pu_prev.tail(m);
-	for(int i =0;i<mSkeleton->getNumJoints();i++)
-	{
-		if(mSkeleton->getJoint(i)->getType()=="BallJoint")
-		{
-			int idx = mSkeleton->getJoint(i)->getIndexInSkeleton(0);
-			Eigen::Matrix3d R0 = BallJoint::convertToRotation(p_curr.segment<3>(idx));
-			Eigen::Matrix3d R1 = BallJoint::convertToRotation(u_curr.segment<3>(idx));
-			
-			p_curr.segment<3>(idx) = BallJoint::convertToPositions(R0*(R1.transpose()));
+	Eigen::VectorXd p_curr = this->computeOriginalPositions(pu_curr);
+	Eigen::VectorXd p_prev = this->computeOriginalPositions(pu_prev);
 
-			R0 = BallJoint::convertToRotation(p_prev.segment<3>(idx));
-			R1 = BallJoint::convertToRotation(u_prev.segment<3>(idx));
-			
-			p_prev.segment<3>(idx) = BallJoint::convertToPositions(R0*(R1.transpose()));
-		}
-	}
 	std::vector<Eigen::VectorXd> states;
 	this->pushState();
 	mSkeleton->setPositions(p_curr);
@@ -474,10 +495,14 @@ getStateAMP(const Eigen::VectorXd& pu_curr, const Eigen::VectorXd& pu_prev)
 		T = T_curr[i].inverse()*T;
 		states.emplace_back(T_curr[i].linear().col(0));
 		states.emplace_back(T_curr[i].linear().col(1));
-		states.emplace_back(T_curr[i].translation());
 		states.emplace_back(T.linear().col(0));
 		states.emplace_back(T.linear().col(1));
-		states.emplace_back(T.translation());
+
+		if(bn->getNumChildBodyNodes() == 0)
+		{
+			states.emplace_back(T_curr[i].translation());
+			states.emplace_back(T.translation());	
+		}
 	}	
 	this->popState();
 

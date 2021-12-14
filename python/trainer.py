@@ -120,14 +120,14 @@ class Trainer(object):
 			self.policy_loc = self.runner.create_policy(config['policy'], self.device)
 			self.num_sgd_iter = config['num_sgd_iter']
 			self.sgd_minibatch_size = config['sgd_minibatch_size']
-
 		elif is_root2_proc():
 			self.disc_loc = self.runner.create_disc(config['disc'], self.device)
 			self.num_sgd_iter = config['num_disc_sgd_iter']
 			self.sgd_minibatch_size = config['disc_sgd_minibatch_size']
+			self.state_experts = self.runner.env.get_state_amp_experts()
 
 		self.num_envs = get_num_procs()
-		self.state_experts = self.runner.env.get_state_amp_experts()
+		
 		self.runner.set_num_samples(config['sample_size']//self.num_envs)
 		self.save_frequency = config['save_frequency']
 

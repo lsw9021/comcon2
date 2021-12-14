@@ -18,6 +18,23 @@ Motion(Skeleton* skel)
 }
 void
 Motion::
+repeat(int frame, int num)
+{
+	Eigen::Vector3d pos = mPositions[frame];
+	Eigen::MatrixXd rot = mRotations[frame];
+
+	std::vector<Eigen::Vector3d> poss(num);
+	std::vector<Eigen::MatrixXd> rots(num);
+
+	for(int i=0;i<num;i++)
+		poss[i] = pos;
+
+	for(int i=0;i<num;i++)
+		rots[i] = rot;
+	this->set(poss, rots);
+}
+void
+Motion::
 rotate(double y)
 {
 	Eigen::Matrix3d Ry = Eigen::AngleAxisd(y, Eigen::Vector3d::UnitY()).toRotationMatrix();

@@ -48,6 +48,7 @@ protected:
 	bool mFocus;
 	bool mUseNN;
 
+	bool mRenderContactForce;
 	py::scoped_interpreter guard;
 	py::object mm,mns,sys_module;
 	py::module trainer_md;
@@ -57,6 +58,8 @@ protected:
 	dart::dynamics::BodyNode* mTargetBodyNode;
 	Eigen::Vector3d mTargetLocalPosition, mTargetPosition;
 	double mTargetDepth;
+	std::vector<double> mDhats;
+	std::vector<std::vector<Eigen::Vector3d>> mCOMTrajectories;
 };
 
 

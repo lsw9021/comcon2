@@ -40,13 +40,17 @@ Environment()
 		
 		mSimCharacter->addKinematicMap(sid, kid);		
 	}
-
-	// mKinCharacter->addMotion(base_bvh_file, 82, 85);
-	// mKinCharacter->addMotion(base_bvh_file, "0:24:04 1:47:23");
-	mKinCharacter->addMotion(base_bvh_file, 172, 206);
-	mKinCharacter->getMotion(0)->rotate(M_PI*1.02);
-	mKinCharacter->getMotion(0)->translate(-Eigen::Vector3d::UnitX()*2.3);
+	//#0 balance
+	mKinCharacter->addMotion(base_bvh_file, 82, 85);
+	mKinCharacter->getMotion(0)->repeat(0,500);
+	
 	mKinCharacter->addMotion(base_bvh_file, "0:24:04 1:47:23");
+	//#1 Push Recovery
+	// mKinCharacter->addMotion(base_bvh_file, 172, 206);
+	// mKinCharacter->getMotion(0)->rotate(M_PI*1.02);
+	// mKinCharacter->getMotion(0)->translate(-Eigen::Vector3d::UnitX()*2.3);
+	// mKinCharacter->addMotion(base_bvh_file, "0:24:04 1:47:23");
+	//#2 walking
 	// mKinCharacter->addMotion(base_bvh_file, "1:44:04 1:47:23");
 
 
@@ -102,8 +106,12 @@ reset()
 	Eigen::Vector3d linear_velocity;
 	Eigen::MatrixXd angular_velocity;
 
+	//#0 balance
 	mKinCharacter->samplePoseFromMotion(0,
-		position,rotation,linear_velocity,angular_velocity,position_prev,rotation_prev,10);
+		position,rotation,linear_velocity,angular_velocity,position_prev,rotation_prev);
+	//#1 push recovery
+	// mKinCharacter->samplePoseFromMotion(0,
+	// 	position,rotation,linear_velocity,angular_velocity,position_prev,rotation_prev,7);
 
 	Eigen::VectorXd p,v,p_prev;
 
@@ -116,20 +124,25 @@ reset()
 	mPrevPositions = mSimCharacter->getPositions();
 	mPrevCOM = mSimCharacter->getSkeleton()->getCOM();
 
-	mTargetBodyNode = mSimCharacter->getSkeleton()->getBodyNode("RightArm");
+	mTargetBodyNode = mSimCharacter->getSkeleton()->getBodyNode("LeftArm");
 	mBodyCenter = mSimCharacter->getReferenceTransform().inverse()*mTargetBodyNode->getCOM();
 
-	double dhat = dart::math::Random::uniform<double>(0.0,1.0);
+	// double dhat = dart::math::Random::uniform<double>(0.0,1.0);
+	double dhat = 0.5;
 	// std::cout<<dhat<<std::endl;
 	mSimCharacter->setRootDHat(Eigen::Vector3d::Constant(dhat));
 
 	mRewardPosition = 1.0;
 	mRewardTask = 1.0;
 
-	mForceTimeCount = 270;
+	// mForceTimeCount = 270;
+	mForceTimeCount = 280;
 	mForceTime = 15;
 	mForceIdleTime= 300;
 
+	// mForceTimeCount = 30;
+	// mForceTime = 15;
+	// mForceIdleTime= 600;
 	this->updateForceTargetPosition();
 	this->recordState();
 }
@@ -159,8 +172,8 @@ step(const Eigen::VectorXd& action)
 	{
 		mSimCharacter->actuate(action);
 		//#1
-		if(mForceTimeCount<mForceTime)
-			mTargetBodyNode->addExtForce(force, Eigen::Vector3d::Zero());
+		// if(mForceTimeCount<mForceTime)
+		// 	mTargetBodyNode->addExtForce(force, Eigen::Vector3d::Zero());
 
 		//#2
 		// if(bn_name.size()!=0){
@@ -231,8 +244,8 @@ getStateAMPExperts()
 	std::vector<Eigen::VectorXd> state_expert;
 	Eigen::VectorXd u = Eigen::VectorXd::Zero(mSimCharacter->getSkeleton()->getNumDofs());
 	for(auto motion : mKinCharacter->getMotions()){
-		int num_frames = motion->getNumFrames();
 
+		int num_frames = motion->getNumFrames();
 		std::vector<Eigen::VectorXd> state_amp;
 		for(int i=1;i<num_frames;i++)
 		{
@@ -270,22 +283,35 @@ recordState()
 
 		Eigen::Vector3d com = mSimCharacter->getSkeleton()->getCOM();
 		Eigen::Vector3d target_com_vel_local = R_ref_inv*(mSimCharacter->getU().head<3>() - com);
+		target_com_vel_local[1] = 0.0;
+		double target_vel_norm = target_com_vel_local.norm();
+		double max_target_vel = 2.0;
+		if(target_vel_norm>max_target_vel){
+			target_com_vel_local /= target_vel_norm*max_target_vel;
+
+		}
 		Eigen::Vector3d com_vel = (com - mPrevCOM)*mControlHz;
 		com_vel[1] = 0.0;
 
 		Eigen::Vector3d com_vel_local = R_ref.transpose()*com_vel;
 		Eigen::Vector3d state_position = com_vel_local - target_com_vel_local;
+		state_position[1] = 0.0;
 
 		mState.resize(state.rows() + 3);
 		mState<<state, state_position;
 
 		mRewardPosition = 1.0;
-		// std::cout<<target_com_vel_local.norm()<<std::endl;
-		if(target_com_vel_local.norm()>0.5)
+		if(target_com_vel_local.norm()>0.3)
 		{
 			double vel = (target_com_vel_local - MathUtils::projectOnVector(com_vel_local, target_com_vel_local)).norm();
 			mRewardPosition = std::exp(-1.5*vel*vel);
 		}
+		else
+		{
+			double vel = com_vel_local.norm();
+			mRewardPosition = std::exp(-5.0*vel*vel);
+		}
+		// mRewardPosition = 1.0;
 	}
 	// double tar_speed = 1.0;
 	// double pos_err_scale = 0.5;
@@ -376,5 +402,5 @@ updateForceTargetPosition()
 	double phi = dart::math::Random::uniform<double>(0, 2*M_PI);
 	// double theta =  dart::math::Random::uniform<double>(0, M_PI);
 	// mForceTargetPosition = Eigen::Vector3d(std::cos(phi),0.0, std::sin(phi));
-	mForceTargetPosition = Eigen::Vector3d(1.0,0.0,0.0);
+	mForceTargetPosition = Eigen::Vector3d(-1.0,0.0,0.0);
 }

@@ -12,6 +12,7 @@ class Motion
 public:
 	Motion(Skeleton* skel);
 
+	void repeat(int frame, int num);
 	void rotate(double y);
 	void translate(const Eigen::Vector3d& tr);
 	void parseBVH(const std::string& file, int start=-1, int end=-1);

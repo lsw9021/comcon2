@@ -21,7 +21,8 @@ Window()
 	:GLUTWindow3D(),
 	mPlay(false),
 	mFocus(false),
-	mCapture(false)
+	mCapture(false),
+	mRenderContactForce(false)
 {
 	mEnvironment = new Environment();
 	
@@ -74,13 +75,14 @@ render()
 	glColor4f(0.4,0.4,1.2,0.8);DrawUtils::drawArrow3D(Eigen::Vector3d::Zero(), Eigen::Vector3d::UnitZ(), 0.2);
 	DARTRendering::drawSkeleton(mEnvironment->getSimCharacter()->getSkeleton(),mSimRenderOption);
 	int n = mEnvironment->getSimCharacter()->getSkeleton()->getNumDofs();
-	// mEnvironment->getSimCharacter()->pushState();
-	// Eigen::VectorXd pu = mEnvironment->getSimCharacter()->getPositions();
+	mEnvironment->getSimCharacter()->pushState();
+	Eigen::VectorXd pu = mEnvironment->getSimCharacter()->getPositions();
+	Eigen::VectorXd p =mEnvironment->getSimCharacter()->computeOriginalPositions(pu);
+	p[5] += 1.0;
+	mEnvironment->getSimCharacter()->getSkeleton()->setPositions(p);
 
-	// mEnvironment->getSimCharacter()->setPositions(pu);
-
-	// DARTRendering::drawSkeleton(mEnvironment->getSimCharacter()->getSkeleton(),mKinRenderOption);
-	// mEnvironment->getSimCharacter()->popState();
+	DARTRendering::drawSkeleton(mEnvironment->getSimCharacter()->getSkeleton(),mKinRenderOption);
+	mEnvironment->getSimCharacter()->popState();
 	{
 		Eigen::Vector3d end = mEnvironment->getForceTargetPosition();
 		Eigen::Vector3d start = mEnvironment->getTargetBodyNode()->getTransform().translation();
@@ -91,11 +93,21 @@ render()
 	{
 		Eigen::Vector3d end = mEnvironment->getSimCharacter()->getU().head<3>();
 		Eigen::Vector3d start = mEnvironment->getSimCharacter()->getSkeleton()->getBodyNode(0)->getCOM();
+		Eigen::Isometry3d T_ref = mEnvironment->getSimCharacter()->getReferenceTransform();
 		glColor4f(0,1,0,1);
 		DrawUtils::drawArrow3D(start, end, 0.08);
 	}
 
-	
+	for(int i=0;i<mCOMTrajectories.size();i++)
+	{
+		glColor4f(mDhats[i],0,0,1);
+		glBegin(GL_LINE_STRIP);
+		for(int j=0;j<mCOMTrajectories[i].size();j++)
+		{
+			glVertex3f(mCOMTrajectories[i][j][0],0.1,mCOMTrajectories[i][j][2]);
+		}
+		glEnd();
+	}
 
 	// {
 	// 	Eigen::Vector3d end = Eigen::Vector3d::UnitZ()*100.0;
@@ -104,6 +116,21 @@ render()
 	// 	DrawUtils::drawArrow3D(start, end, 0.2);
 	// }
 
+	if(mRenderContactForce)
+	{
+		auto world = mEnvironment->getWorld();	
+		auto cr = world->getConstraintSolver()->getLastCollisionResult();
+		for(int j=0;j<cr.getNumContacts();j++)
+		{
+			auto contact = cr.getContact(j);
+			
+			Eigen::Vector3d end = contact.force*0.001 + contact.point;
+			Eigen::Vector3d start = contact.point;
+			glColor4f(1,0,0,0.6);
+			DrawUtils::drawArrow3D(start, end, 0.08);
+			glColor4f(0,0,0,1.0);
+		}
+	}
 	if(mTargetBodyNode!=nullptr)
 	{
 		Eigen::Vector3d end = mTargetPosition;
@@ -151,6 +178,8 @@ Window::
 reset()
 {
 	mEnvironment->reset();
+	mCOMTrajectories.emplace_back(std::vector<Eigen::Vector3d>());
+	mDhats.emplace_back(mEnvironment->getSimCharacter()->getRootDHat().norm());
 }
 void
 Window::
@@ -162,6 +191,7 @@ step()
 	{
 		action = runner.attr("compute_action")(obs).cast<Eigen::VectorXd>();
 	}
+	mCOMTrajectories.back().emplace_back(mEnvironment->getSimCharacter()->getReferenceTransform().translation());
 
 	if(mTargetBodyNode!=nullptr)
 	{
