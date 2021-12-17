@@ -16,6 +16,7 @@ public:
 	
 
 	Eigen::Isometry3d getReferenceTransform();
+	double getReferenceOrientation();
 
 	void computeSimPose(const Eigen::Vector3d& position,
 						const Eigen::MatrixXd& rotation,
@@ -62,6 +63,9 @@ public:
 
 	dart::dynamics::SkeletonPtr getSkeleton(){return mSkeleton;}
 	const std::map<int, int>& getKinematicMap(){return mKinematicMap;}
+
+	const Eigen::VectorXd& getCummulatedForces(){return mCummulatedForces;}
+	void clearCummulatedForces(){mCummulatedForces = Eigen::VectorXd::Zero(mSkeleton->getNumDofs());}
 private:
 	dart::dynamics::SkeletonPtr mSkeleton;
 	std::vector<dart::dynamics::BodyNode*> mEndEffectors;
@@ -80,6 +84,7 @@ private:
 	std::string mBodyNodeName;
 
 	Eigen::Vector3d mURootBar;
+	Eigen::VectorXd mCummulatedForces;
 };
 
 #endif

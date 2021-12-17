@@ -25,6 +25,7 @@ public:
 	const Eigen::VectorXd& getState(){return mState;}
 	const Eigen::VectorXd& getStateAMP(){return mStateAMP;}
 	
+	const Eigen::VectorXd& getForceInfo();
 
 	const dart::simulation::WorldPtr& getWorld(){return mWorld;}
 	const dart::dynamics::SkeletonPtr& getGround(){return mGround;}
@@ -39,6 +40,12 @@ public:
 		if(mForceTimeCount<mForceTime)
 			return mForceTargetPosition;
 		return Eigen::Vector3d::Zero();}
+
+	// const Eigen::VectorXd& getForceFunction(){return mForceFunction;}
+	// void setForceFunction(const Eigen::VectorXd& f);
+	// double getMaxForce(double phi);
+	void setForceTargetPosition(const Eigen::Vector3d& f);
+	const Eigen::Vector3d& getAppliedForce(){return mForceTargetPosition;}
 private:
 	void recordState();
 
@@ -57,6 +64,8 @@ private:
 
 	Eigen::VectorXd mPrevPositions, mPrevPositions2;
 	Eigen::Vector3d mPrevCOM;
+	double mPrevOrientation;
+
 	Eigen::VectorXd mState, mStateAMP;
 	double mRewardPosition, mRewardTask;
 
@@ -72,6 +81,9 @@ private:
 
 	bool mTask;
 	Eigen::VectorXd mStateTask;
+
+	// double mdTheta;
+	// Eigen::VectorXd mForceFunction;
 };
 
 #endif

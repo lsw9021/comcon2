@@ -17,6 +17,8 @@ public:
 	static Eigen::Matrix3d eulerZXYToMatrix(const Eigen::Vector3d& _angle);
 	static Eigen::Matrix3d eulerZYXToMatrix(const Eigen::Vector3d& _angle);
 
+	static double computeAngleDiff(double a0, double a1);
+	
 	static bool seed;
 	// static double uniformd(double min, double max);
 	static int uniformi(int min, int max);

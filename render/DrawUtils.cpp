@@ -2102,7 +2102,51 @@ drawSphere(double r, eDrawMode draw_mode)
 		sphere_wire_simple->draw(GL_LINES);
 	glPopMatrix();
 }
+void
+DrawUtils::
+drawCircleArrow(double width, double phi_start, double phi_end)
+{
+	int stride = 64;
+	double dphi = 2*M_PI/(double)stride;
+	glBegin(GL_QUADS);
+	for(double phi = phi_start;phi<=phi_end;phi+=dphi)
+	{
+		double sr0 = std::sin(phi);
+		double sr1 = std::sin(phi+dphi);
+		double cr0 = std::cos(phi);
+		double cr1 = std::cos(phi+dphi);
 
+		double sR0 = (1.0-width)*std::sin(phi);
+		double sR1 = (1.0-width)*std::sin(phi+dphi);
+		double cR0 = (1.0-width)*std::cos(phi);
+		double cR1 = (1.0-width)*std::cos(phi+dphi);
+		glVertex3f(cr0,0.0,sr0);
+		glVertex3f(cr1,0.0,sr1);
+		glVertex3f(cR1,0.0,sR1);
+		glVertex3f(cR0,0.0,sR0);
+	}
+	glEnd();
+	glPushMatrix();
+	if(phi_start<0.0){
+		glRotatef(-phi_start*180.0/M_PI,0.0,1.0,0.0);
+		glBegin(GL_TRIANGLES);
+		glVertex3f(1.0+width,0.0,0.0);
+		glVertex3f(1.0-2*width,0.0,0.0);
+		glVertex3f(1.0-width,0.0,-width*2.5);
+		glEnd();
+	}
+	else{
+		glRotatef(-phi_end*180.0/M_PI,0.0,1.0,0.0);
+		glBegin(GL_TRIANGLES);
+		glVertex3f(1.0+width,0.0,0.0);
+		glVertex3f(1.0-2*width,0.0,0.0);
+		glVertex3f(1.0-width,0.0,width*2.5);
+		glEnd();
+	}
+		
+	glPopMatrix();
+
+}
 void
 DrawUtils::
 drawCylinder(double r, double h, eDrawMode draw_mode)
@@ -2500,6 +2544,12 @@ translate(const Eigen::Vector3d& trans)
 }
 void
 DrawUtils::
+scale(double scale)
+{
+	glScalef(scale,scale,scale);
+}
+void
+DrawUtils::
 scale(const Eigen::Vector3d& scale)
 {
 	glScalef(scale[0],scale[1],scale[2]);
@@ -2627,7 +2677,21 @@ drawConeWireSimple(double r, double h)
 	cone_wire_simple->draw(GL_LINES);
 	glPopMatrix();
 }
+#include <sstream>
+#include <stdlib.h>
+Eigen::Vector3d
+DrawUtils::
+stringToRGB(const std::string& rgb)
+{
+	int number = (int)strtol(rgb.c_str(), NULL, 16);
+	int r = number/65536;
+	number -= r*65536;
+	int g = number/256;
+	number -= g*256;
+	int b = number;
 
+	return Eigen::Vector3d(r/(double)255.0, g/(double)255.0, b/255.0);
+}
 // void
 // DrawUtils::
 // drawBox()

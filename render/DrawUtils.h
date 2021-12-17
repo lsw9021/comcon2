@@ -5,6 +5,7 @@
 #include <Eigen/Geometry>
 #include <utility>
 #include <vector>
+#include <string>
 #include <GL/glew.h>
 #include <GL/glut.h>
 struct DrawMesh
@@ -88,6 +89,7 @@ public:
 	static void drawDisk(const Eigen::Vector3d& pos, const Eigen::Vector3d& r, eDrawMode draw_mode = eDrawSolid);
 	static void drawDisk(double r, eDrawMode draw_mode = eDrawSolid);
 	static void drawDisk(const Eigen::Vector3d& r, eDrawMode draw_mode = eDrawSolid);
+	static void drawCircleArrow(double width, double phi_start, double phi_end);
 	static void drawPoint(const Eigen::Vector3d& pt);
 	static void drawLine(const Eigen::Vector3d& a, const Eigen::Vector3d& b);
 	static void drawLineStrip(const std::vector<Eigen::Vector3d>& pts);
@@ -111,6 +113,7 @@ public:
 	static void drawPlot(const BarPlot& bar_plot, const Eigen::Vector3d& pos, const Eigen::Vector3d& size);
 	static void drawLinePlot(const BarPlot& bar_plot, const Eigen::Vector3d& pos, const Eigen::Vector3d& size);
 	static void translate(const Eigen::Vector3d& trans);
+	static void scale(double scale);
 	static void scale(const Eigen::Vector3d& scale);
 	static void rotate(double theta, const Eigen::Vector3d& axis);
 	static void rotate(const Eigen::Quaterniond& q);
@@ -122,6 +125,8 @@ public:
 	static void disableTexture();
 
 	static bool initialized;
+
+	static Eigen::Vector3d stringToRGB(const std::string& rgb);
 private:
 	static DrawMesh* point;
 	static DrawMesh* line;

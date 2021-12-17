@@ -30,5 +30,7 @@ public:
 
 
 	static void drawShape(const Eigen::Isometry3d& T, const dart::dynamics::Shape* shape, DrawUtils::eDrawMode draw_mode);
+private:
+	static bool mEE;
 };
 #endif

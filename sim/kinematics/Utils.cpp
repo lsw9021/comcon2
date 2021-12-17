@@ -121,6 +121,17 @@ eulerZYXToMatrix(const Eigen::Vector3d& _angle) {
   return ret;
 }
 
+double
+Utils::
+computeAngleDiff(double a0, double a1)
+{
+  Eigen::AngleAxisd aa0(a0, Eigen::Vector3d::UnitY());
+  Eigen::AngleAxisd aa1(a1, Eigen::Vector3d::UnitY());
+
+  Eigen::AngleAxisd aa01(aa0.toRotationMatrix().transpose()*(aa1.toRotationMatrix()));
+
+  return aa01.angle()*(aa01.axis()[1]);
+}
 // double
 // Utils::
 // uniformd(double min, double max)

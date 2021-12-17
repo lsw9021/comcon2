@@ -12,5 +12,8 @@ PYBIND11_MODULE(pycomcon, m){
 		.def("get_state_amp_experts",&Environment::getStateAMPExperts)
 		.def("get_reward_position",&Environment::getRewardPosition)
 		.def("get_state",&Environment::getState)
-		.def("get_state_amp",&Environment::getStateAMP);
+		.def("get_state_amp",&Environment::getStateAMP)
+		.def("set_force_target_position",&Environment::setForceTargetPosition)
+		.def("get_applied_force",&Environment::getAppliedForce);
+		// .def("get_force_function",&Environment::getForceFunction)
 }

@@ -30,6 +30,9 @@ Window()
 	mCamera->setEye( Eigen::Vector3d(-2.0,1.3,-0.8));
 
 	this->reset();
+	Eigen::Vector3d com = mEnvironment->getSimCharacter()->getSkeleton()->getBodyNode(0)->getCOM();
+	mCamera->setLookAt(com);
+	mCamera->setEye( com + Eigen::Vector3d(2.0,0.0,0.0));
 }
 void
 Window::
@@ -45,6 +48,7 @@ initNN(const std::string& config)
 
 	trainer_md = py::module::import("trainer");
 	runner = trainer_md.attr("build_runner")(config);
+	runner.attr("set_random_force_from_function")();
 }
 void
 Window::
@@ -53,6 +57,10 @@ loadNN(const std::string& checkpoint)
 	mCheckPoint = checkpoint;
 	std::cout<<"load "<<mCheckPoint<<std::endl;
 	trainer_md.attr("load_runner")(runner, checkpoint);
+	runner.attr("set_random_force_from_function")();
+	mEnvironment->setForceTargetPosition(runner.attr("force").cast<Eigen::Vector3d>());
+	// Eigen::VectorXd ff = runner.attr("get_force_function")().cast<Eigen::VectorXd>();
+	// mEnvironment->setForceFunction(ff);
 }
 void
 Window::
@@ -75,39 +83,124 @@ render()
 	glColor4f(0.4,0.4,1.2,0.8);DrawUtils::drawArrow3D(Eigen::Vector3d::Zero(), Eigen::Vector3d::UnitZ(), 0.2);
 	DARTRendering::drawSkeleton(mEnvironment->getSimCharacter()->getSkeleton(),mSimRenderOption);
 	int n = mEnvironment->getSimCharacter()->getSkeleton()->getNumDofs();
-	mEnvironment->getSimCharacter()->pushState();
-	Eigen::VectorXd pu = mEnvironment->getSimCharacter()->getPositions();
-	Eigen::VectorXd p =mEnvironment->getSimCharacter()->computeOriginalPositions(pu);
-	p[5] += 1.0;
-	mEnvironment->getSimCharacter()->getSkeleton()->setPositions(p);
-
-	DARTRendering::drawSkeleton(mEnvironment->getSimCharacter()->getSkeleton(),mKinRenderOption);
-	mEnvironment->getSimCharacter()->popState();
 	{
-		Eigen::Vector3d end = mEnvironment->getForceTargetPosition();
+		mEnvironment->getSimCharacter()->pushState();
+		Eigen::VectorXd pu = mEnvironment->getSimCharacter()->getPositions();
+		// Eigen::VectorXd p =mEnvironment->getSimCharacter()->computeOriginalPositions(pu);
+		Eigen::VectorXd p = pu.tail(n);
+		// p[5] += 2.0;
+		// p[4] += 1.0;
+
+		p.head<6>().setZero();
+		p[5] += 2.0;
+		p[4] += 1.0;
+		
+		mEnvironment->getSimCharacter()->getSkeleton()->setPositions(p);
+
+		DARTRendering::drawSkeleton(mEnvironment->getSimCharacter()->getSkeleton(),mKinRenderOption);
+		mEnvironment->getSimCharacter()->popState();
+	}
+	{
+		Eigen::Vector3d end = 0.1*mEnvironment->getForceTargetPosition();
 		Eigen::Vector3d start = mEnvironment->getTargetBodyNode()->getTransform().translation();
 		glColor4f(1,0,0,1);
 		DrawUtils::drawArrow3D(start, start + end, 0.1);
 	}
 	
-	{
-		Eigen::Vector3d end = mEnvironment->getSimCharacter()->getU().head<3>();
-		Eigen::Vector3d start = mEnvironment->getSimCharacter()->getSkeleton()->getBodyNode(0)->getCOM();
-		Eigen::Isometry3d T_ref = mEnvironment->getSimCharacter()->getReferenceTransform();
-		glColor4f(0,1,0,1);
-		DrawUtils::drawArrow3D(start, end, 0.08);
-	}
+	// {
+	// 	Eigen::Vector3d end = mEnvironment->getSimCharacter()->getU().head<3>();
+	// 	Eigen::Vector3d start = mEnvironment->getSimCharacter()->getSkeleton()->getBodyNode(0)->getCOM();
+	// 	Eigen::Isometry3d T_ref = mEnvironment->getSimCharacter()->getReferenceTransform();
+	// 	glColor4f(0,1,0,1);
+	// 	DrawUtils::drawArrow3D(start, end, 0.08);
+	// }
 
-	for(int i=0;i<mCOMTrajectories.size();i++)
+	// for(int i=0;i<mCOMTrajectories.size();i++)
+	// {
+	// 	glColor4f(mDhats[i],0,0,1);
+	// 	glBegin(GL_LINE_STRIP);
+	// 	for(int j=0;j<mCOMTrajectories[i].size();j++)
+	// 	{
+	// 		glVertex3f(mCOMTrajectories[i][j][0],0.1,mCOMTrajectories[i][j][2]);
+	// 	}
+	// 	glEnd();
+	// }
+
+	// {
+	// 	int stride = 64;
+	// 	Eigen::Isometry3d T_ref = mEnvironment->getSimCharacter()->getReferenceTransform();
+	// 	glPushMatrix();
+	// 	DrawUtils::transform(T_ref);
+	// 	glBegin(GL_TRIANGLE_FAN);
+	// 	glVertex3f(0.0,1.0,0.0);
+	// 	for(int i =0;i<stride+1;i++)
+	// 	{
+	// 		double phi = 2*M_PI/(double)stride*i;
+
+	// 		double val = mEnvironment->getMaxForce(phi);
+	// 		Eigen::Vector3d force = val*Eigen::Vector3d(std::cos(phi),0.0, std::sin(phi));
+	// 		glVertex3f(force[0],1.0,force[2]);
+	// 	}	
+	// 	glEnd();
+	// 	glPopMatrix();
+	// }
 	{
-		glColor4f(mDhats[i],0,0,1);
-		glBegin(GL_LINE_STRIP);
-		for(int j=0;j<mCOMTrajectories[i].size();j++)
-		{
-			glVertex3f(mCOMTrajectories[i][j][0],0.1,mCOMTrajectories[i][j][2]);
-		}
-		glEnd();
+		auto skel = mEnvironment->getSimCharacter()->getSkeleton();
+		Eigen::VectorXd forces = mEnvironment->getSimCharacter()->getCummulatedForces();
+		int lf = skel->getJoint("LeftFoot")->getIndexInSkeleton(0);
+		int rf = skel->getJoint("RightFoot")->getIndexInSkeleton(0);
+
+		Eigen::Vector3d tlf, trf;
+		tlf = forces.segment<3>(lf);
+		trf = forces.segment<3>(rf);
+
+		Eigen::Isometry3d Tplf, Tprf;
+		Tplf = skel->getBodyNode("LeftFoot")->getParentBodyNode()->getTransform();
+		Tprf = skel->getBodyNode("RightFoot")->getParentBodyNode()->getTransform();
+
+		Eigen::Isometry3d Tlf, Trf;
+		Tlf = skel->getBodyNode("LeftFoot")->getTransform()*skel->getJoint("LeftFoot")->getTransformFromChildBodyNode();
+		Trf = skel->getBodyNode("RightFoot")->getTransform()*skel->getJoint("RightFoot")->getTransformFromChildBodyNode();
+
+		tlf = Tplf.linear()*tlf;
+		trf = Tprf.linear()*trf;
+
+		Eigen::Vector3d dlf = tlf.normalized();
+		Eigen::Vector3d drf = trf.normalized();
+		// std::cout<<tlf<<std::endl;
+		
+
+
+		glPushMatrix();
+		DrawUtils::translate(Tlf.translation());
+		DrawUtils::translate(0.1*Eigen::Vector3d::UnitX());
+
+		// DrawUtils::rotate(std::acos(dlf[1]), dlf.cross(Eigen::Vector3d::UnitY()));
+		DrawUtils::scale(0.15);
+		glPushMatrix();
+		DrawUtils::rotate(M_PI*0.5, Eigen::Vector3d::UnitZ());
+		glColor3f(5.0,0.0,0.0);
+		if(tlf[0]>0.0)
+			DrawUtils::drawCircleArrow(0.15, 0.0,M_PI*tlf[0]/300.0);
+		else
+			DrawUtils::drawCircleArrow(0.15, M_PI*tlf[0]/300.0,0.0);
+
+		glPopMatrix();
+
+		// glPushMatrix();
+		// glColor3f(0.0,5.0,0.0);
+		// DrawUtils::drawCircleArrow(0.1, 0.0,2*M_PI*tlf[1]/100.0);
+		// glPopMatrix();
+
+		// glPushMatrix();
+		// DrawUtils::rotate(M_PI*0.5, Eigen::Vector3d::UnitX());
+		// glColor3f(0.0,0.0,5.0);
+		// DrawUtils::drawCircleArrow(0.1, 0.0,2*M_PI*tlf[2]/100.0);
+		// glPopMatrix();
+
+		glPopMatrix();
 	}
+	
 
 	// {
 	// 	Eigen::Vector3d end = Eigen::Vector3d::UnitZ()*100.0;
@@ -180,6 +273,12 @@ reset()
 	mEnvironment->reset();
 	mCOMTrajectories.emplace_back(std::vector<Eigen::Vector3d>());
 	mDhats.emplace_back(mEnvironment->getSimCharacter()->getRootDHat().norm());
+	if(mUseNN)
+	{
+		runner.attr("set_random_force_from_function")();
+		mEnvironment->setForceTargetPosition(0.9*runner.attr("force").cast<Eigen::Vector3d>());
+	}
+
 }
 void
 Window::
@@ -196,12 +295,13 @@ step()
 	if(mTargetBodyNode!=nullptr)
 	{
 		Eigen::Vector3d force = 20.0*(mTargetPosition - mTargetBodyNode->getTransform()*mTargetLocalPosition);
+		std::cout<<force.norm()<<std::endl;
 		mEnvironment->getSimCharacter()->addExternalForce(mTargetBodyNode,mTargetLocalPosition,force);
 	}
 	mEnvironment->step(action);
 	// Eigen::VectorXd s_amp = mEnvironment->getStateAMP();
-	// if(mEnvironment->eoe())
-	// 	this->reset();
+	if(mEnvironment->eoe())
+		this->reset();
 }
 
 void
@@ -222,8 +322,8 @@ keyboard(unsigned char key, int x, int y)
 		case '5':d_hat[2] *=0.1;break;
 		case '6':d_hat[2] /=0.1;break;
 		case '7':d_hat = Eigen::Vector3d::Constant(1e-3);break;
-		case '8':d_hat *= 0.1;break;
-		case '9':d_hat *= 10.0;break;
+		case '8':d_hat *= 0.5;break;
+		case '9':d_hat *= 2.0;break;
 		case ' ':mPlay = !mPlay; break;
 		default:GLUTWindow3D::keyboard(key,x,y);break;
 	}

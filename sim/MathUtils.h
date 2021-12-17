@@ -14,6 +14,7 @@ public:
 	static Eigen::VectorXd ravel(const std::vector<Eigen::VectorXd>& vv);
 	static Eigen::MatrixXd toEigenMatrix(const std::vector<Eigen::VectorXd>& vv);
 	static Eigen::MatrixXd toEigenMatrix(const std::vector<Eigen::Vector3d>& vv);
+
 template<typename T>
 	static T ravel(const T& first) {
 		return first;

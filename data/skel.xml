@@ -8,7 +8,7 @@
         </Joint>
     </Node>
     <Node name="Spine1" parent="Spine" >
-        <Body type="Sphere" mass="7.0" radius="0.0951" contact="On" >
+        <Body type="Sphere" mass="7.0" radius="0.0851" contact="On" >
             <Transformation linear="1.0 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0" translation="0.0000 0.3251 0.0"/>
         </Body>
         <Joint type="Ball" bvh="simSpine" kp="500.0" maxf="400.0" weight="0.4" m="10.0" d="20.0" k="80.0" lower="-3.14 -3.14 -3.14" upper="3.14 3.14 3.14">
@@ -100,7 +100,7 @@
         <Body type="Box" mass="1.0" size="0.1244 0.0639 0.2114" contact="On">
             <Transformation linear="1.0 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0" translation="0.0927 -0.997  0.0508"/>
         </Body>
-        <Joint type="Ball" bvh="simLeftFoot" kp="300.0" maxf="400.0" weight="0.2" endeffector="True" lower="-3.14 -3.14 -3.14" upper="3.14 3.14 3.14" m="1e8" d="0.0" k="0.0">
+        <Joint type="Ball" bvh="simLeftFoot" kp="500.0" maxf="500.0" weight="0.2" endeffector="True" lower="-3.14 -3.14 -3.14" upper="3.14 3.14 3.14" m="1e8" d="0.0" k="0.0">
             <Transformation linear="1.0 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0" translation="0.0845 -0.915  0.0084"/>
         </Joint>
     </Node>
@@ -127,7 +127,7 @@
         <Body type="Box" mass="1.0" size="0.1244 0.0639 0.2114" contact="On">
             <Transformation linear="1.0 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0" translation="-0.0927 -0.997 0.0508"/>
         </Body>
-        <Joint type="Ball" bvh="simRightFoot" kp="300.0" maxf="400.0" weight="0.2" endeffector="True" lower="-3.14 -3.14 -3.14" upper="3.14 3.14 3.14" m="1e8" d="0.0" k="0.0">
+        <Joint type="Ball" bvh="simRightFoot" kp="500.0" maxf="500.0" weight="0.2" endeffector="True" lower="-3.14 -3.14 -3.14" upper="3.14 3.14 3.14" m="1e8" d="0.0" k="0.0">
             <Transformation linear="1.0 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0" translation="-0.0845 -0.915 0.0084"/>
         </Joint>
     </Node>

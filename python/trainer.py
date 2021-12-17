@@ -32,15 +32,22 @@ class Runner(object):
 
 		self.policy = self.create_policy(config['policy'],torch.device('cpu'))
 		self.disc = self.create_disc(config['disc'],torch.device('cpu'))
+		self.env_state = {}
+		stride = 16
+		self.env_state['force_function'] = 10.0 * np.ones(stride)
 
 		self.num_samples = None
 
 		self.env.reset()
 		
+		self.force_info_buffers = []
 		self.episode_buffers = []
 		self.episode_buffers.append([])
 
 		self.state = self.env.get_state()
+
+		self.force = None
+		self.force_index = -1
 	def set_num_samples(self, num_samples):
 		self.num_samples = num_samples
 
@@ -49,6 +56,15 @@ class Runner(object):
 
 	def create_disc(self, config, device):
 		return discriminator.Discriminator(self.env.get_dim_state_amp(), device, config)
+
+	def set_random_force_from_function(self):
+		ff = self.env_state['force_function']
+		n = ff.shape[0]
+		idx = np.random.randint(n)
+		dtheta = 2*math.pi/n
+		self.force = ff[idx]*np.array([np.sin(dtheta*idx),0.0,np.cos(dtheta*idx)])
+		self.force_index = idx
+		self.env.set_force_target_position(self.force)
 
 	def step(self):
 		self.generate_episodes()
@@ -64,16 +80,29 @@ class Runner(object):
 			rg = self.env.get_reward_position()
 
 			self.episode_buffers[-1].append(Sample(self.state, a, rg, s_amp, vf, lp))
+
 			self.state = self.env.get_state()
 			if eoe:
+				self.force_info_buffers.append((self.force_index, len(self.episode_buffers[-1])))
+
+
 				if len(self.episode_buffers[-1]) != 0:
 					self.episode_buffers.append([])
+
 				self.env.reset()
+				self.set_random_force_from_function()
 				self.state = self.env.get_state()
 
 	def postprocess_episodes(self):
 		self.policy_episodes = []
 		self.disc_episodes = []
+		self.force_infos = []
+
+		for buf in self.force_info_buffers:
+			force_info = {}
+			force_info['FORCE'] = buf[0]
+			force_info['LEN_EPISODE'] = buf[1]
+			self.force_infos.append(force_info)	
 
 		for epi in self.episode_buffers[:-1]:
 			s, a, rg, s_amp,  v, l = Sample(*zip(*epi))
@@ -101,6 +130,7 @@ class Runner(object):
 			self.disc_episodes.append(disc_epi)
 
 		self.episode_buffers = self.episode_buffers[-1:]
+		self.force_info_buffers = []
 
 	def compute_action(self, state):
 		a, lp, vf = self.policy(state, explore=False)
@@ -120,22 +150,28 @@ class Trainer(object):
 			self.policy_loc = self.runner.create_policy(config['policy'], self.device)
 			self.num_sgd_iter = config['num_sgd_iter']
 			self.sgd_minibatch_size = config['sgd_minibatch_size']
+			self.env_state_loc = self.runner.env_state
+
 		elif is_root2_proc():
 			self.disc_loc = self.runner.create_disc(config['disc'], self.device)
 			self.num_sgd_iter = config['num_disc_sgd_iter']
 			self.sgd_minibatch_size = config['disc_sgd_minibatch_size']
 			self.state_experts = self.runner.env.get_state_amp_experts()
 
+		self.runner.set_random_force_from_function()
 		self.num_envs = get_num_procs()
 		
 		self.runner.set_num_samples(config['sample_size']//self.num_envs)
 		self.save_frequency = config['save_frequency']
+		
 
 		if is_root_proc():
 			self.state_dict = {}
+
 			self.state_dict['elapsed_time'] = 0.0
 			self.state_dict['num_iterations_so_far'] = 0
 			self.state_dict['num_samples_so_far'] = 0
+			
 
 			self.create_summary_writer(path)
 
@@ -154,8 +190,12 @@ class Trainer(object):
 			samples = self.concat(self.policy_episodes)
 
 			log_policy = self.optimize_policy(samples)
+			sample_force = self.concat(self.force_infos)
 			log.update(log_policy)
 
+			
+			log_force = self.optimize_force_function(sample_force)
+			log.update(log_force)
 		if is_root2_proc():
 			samples = self.concat(self.disc_episodes)
 			log_disc = self.optimize_disc(samples)
@@ -170,21 +210,31 @@ class Trainer(object):
 			self.print_log(log)
 			self.save()
 
+
 	def sync(self):
 		if is_root_proc():
 			state_dict = self.policy_loc.state_dict()
 			self.runner.policy.load_state_dict(state_dict)
+
+			env_state = self.env_state_loc
+			self.runner.env_state = env_state
+
 		if is_root2_proc():
 			state_dict = self.disc_loc.state_dict()
 			self.runner.disc.load_state_dict(state_dict)
 
 		self.runner.policy = broadcast(self.runner.policy, root=get_root_proc())
 		self.runner.disc = broadcast(self.runner.disc, root=get_root2_proc())
+		self.runner.env_state = broadcast(self.runner.env_state, root=get_root_proc())
 
 	def gather(self):
 		self.policy_episodes = gather(self.runner.policy_episodes, root=get_root_proc())
 		self.disc_episodes = gather(self.runner.disc_episodes, root=get_root2_proc())
+		self.force_infos = gather(self.runner.force_infos, root=get_root_proc())
 
+			# print([*zip(*self.force_infos)])
+			# print(np.concatenate([*zip(*self.force_infos)][0]).reshape(-1,3))
+			# print(np.concatenate([*zip(*self.force_infos)][1]).reshape(-1))
 	def concat(self, episodes):
 		samples = []
 		for epis in episodes:
@@ -201,12 +251,55 @@ class Trainer(object):
 			for key, item in sample.items():
 				ret[key].append(item)
 
-		for key in ret.keys():
-			ret[key] = np.concatenate(ret[key])
+		if 'FORCE' in ret.keys():
+			# ret['FORCE'] = np.concatenate(ret['FORCE']).reshape(-1,3)
+			ret['FORCE'] = np.array(ret['FORCE'])
+			ret['LEN_EPISODE'] = np.array(ret['LEN_EPISODE'])
+
+		else:
+			for key in ret.keys():
+				ret[key] = np.concatenate(ret[key])
 
 		ret['NUM_EPISODES'] = len(samples)
 		return ret
+	def optimize_force_function(self, samples):
+		if samples == None:
+			log = {}
+			log['force_function'] = self.env_state_loc['force_function']
 
+			return log
+		forces = samples['FORCE']
+		succs = samples['LEN_EPISODE']>180
+
+		n = len(self.env_state_loc['force_function'])
+		#compute Success rate
+		denom = np.zeros(n)
+		numer = np.zeros(n)
+		for f, s in zip(forces, succs):
+			denom[f] = denom[f]+1
+			if s:
+				numer[f] = numer[f]+1
+
+		cond = denom>1e-6
+		
+		default_value = 0.8
+		success_rate = default_value*np.ones(n)
+		success_rate[cond] = numer[cond]/denom[cond]
+		rate = success_rate + 0.1
+
+		rate[success_rate<0.9] = 0.1/0.9*success_rate[success_rate<0.9] + 0.9
+		momentum = 0.9
+
+		self.env_state_loc['force_function'] = momentum*self.env_state_loc['force_function'] + \
+											(1.0-momentum)*rate*self.env_state_loc['force_function']
+
+		self.env_state_loc['force_function'] = 0.5*(self.env_state_loc['force_function'] + np.roll(np.flip(self.env_state_loc['force_function']),1))
+		self.env_state_loc['force_function'][self.env_state_loc['force_function']<1.0] = 1.0
+		self.env_state_loc['force_function'][self.env_state_loc['force_function']>200.0] = 200.0
+		log = {}
+		log['force_function'] = self.env_state_loc['force_function']
+
+		return log
 	def optimize_policy(self, samples):
 		
 		if samples == None:
@@ -334,6 +427,8 @@ class Trainer(object):
 		print('discriminator loss : {:.3f} acc_expert : {:.3f}, acc_agent : {:.3f}'.format(log['disc_loss'],
 																						log['expert_accuracy'],
 																						log['agent_accuracy']))
+		np.set_printoptions(precision=1)
+		print('force function : {}'.format(self.env_state_loc['force_function']))
 		print('')
 		self.writer.add_scalar('policy/episode_len',log['mean_episode_len'],
 				self.state_dict['num_samples_so_far'])
@@ -360,6 +455,7 @@ class Trainer(object):
 			state = {}
 			state['policy_state_dict'] = self.runner.policy.state_dict()
 			state['discriminator_state_dict'] = self.runner.disc.state_dict()
+			state['env_state'] = self.runner.env_state
 
 			state.update(self.state_dict)
 			path = os.path.split(self.path)[0]
@@ -369,6 +465,7 @@ class Trainer(object):
 			state = {}
 			state['policy_state_dict'] = self.runner.policy.state_dict()
 			state['discriminator_state_dict'] = self.runner.disc.state_dict()
+			state['env_state'] = self.runner.env_state
 
 			state.update(self.state_dict)
 
@@ -380,6 +477,8 @@ class Trainer(object):
 			print(f'load {path}')
 			state = torch.load(path)
 			self.policy_loc.load_state_dict(state['policy_state_dict'])
+			# self.env_state_loc = state['env_state']
+
 			for key in self.state_dict.keys():
 				self.state_dict[key] = state[key]
 		elif is_root2_proc():
@@ -394,6 +493,6 @@ def build_runner(config):
 
 def load_runner(runner, checkpoint):
 	state_dict = torch.load(checkpoint)
-
 	runner.policy.load_state_dict(state_dict['policy_state_dict'])
 	runner.disc.load_state_dict(state_dict['discriminator_state_dict'])
+	runner.env_state = state_dict['env_state']
