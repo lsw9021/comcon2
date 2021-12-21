@@ -35,7 +35,7 @@
     </Node>
 
     <Node name="LeftForeArm" parent="LeftArm" >
-        <Body type="Box" mass="3.0" size="0.2346 0.044 0.044" contact="Off">
+        <Body type="Box" mass="3.0" size="0.2346 0.044 0.044" contact="On">
             <Transformation linear="1.0 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0" translation="0.5147 0.4261 0.0"/>
         </Body>
         <Joint type="Ball" bvh="simLeftForeArm" kp="300.0" maxf="300.0" weight="0.2" m="5.0" d="20.0" k="30.0" lower="-3.14 -3.14 -3.14" upper="3.14 3.14 3.14">
@@ -44,7 +44,7 @@
     </Node>
 
     <Node name="LeftHand" parent="LeftForeArm" >
-        <Body type="Sphere" mass="1.0" radius="0.0312" contact="Off">
+        <Body type="Sphere" mass="1.0" radius="0.0312" contact="On">
             <Transformation linear="1.0 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0" translation="0.6700 0.4261 0.0085"/>
         </Body>
         <Joint type="Weld" bvh="simLeftHand" kp="0.0" maxf="0.0" weight="0.0" endeffector="True" m="1e8" d="0.0" k="0.0">
@@ -80,7 +80,7 @@
         </Joint>
     </Node>
     <Node name="LeftUpLeg" parent="Spine" >
-        <Body type="Box" mass="7.0" size="0.1 0.3699 0.1" contact="Off">
+        <Body type="Box" mass="7.0" size="0.1 0.3699 0.1" contact="On">
             <Transformation linear="1.0 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0" translation="0.0900 -0.32 0.0100"/>
         </Body>
         <Joint type="Ball" bvh="simLeftUpLeg" kp="500.0" maxf="400.0" weight="0.5" lower="-3.14 -3.14 -3.14" upper="3.14 3.14 3.14" m="1e8" d="0.0" k="0.0">
@@ -88,7 +88,7 @@
         </Joint>
     </Node>
     <Node name="LeftLeg" parent="LeftUpLeg" >
-        <Body type="Box" mass="7.0" size="0.1 0.3611 0.1" contact="Off">
+        <Body type="Box" mass="7.0" size="0.1 0.3611 0.1" contact="On">
             <Transformation linear="1.0 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0" translation="0.0955 -0.72 0.0116"/>
         </Body>
         <Joint type="Ball" bvh="simLeftLeg" kp="400.0" maxf="400.0" weight="0.3" lower="-3.14 -3.14 -3.14" upper="3.14 3.14 3.14" m="1e8" d="0.0" k="0.0">
@@ -107,7 +107,7 @@
 
 
     <Node name="RightUpLeg" parent="Spine" >
-        <Body type="Box" mass="7.0" size="0.1 0.3611 0.1" contact="Off">
+        <Body type="Box" mass="7.0" size="0.1 0.3611 0.1" contact="On">
             <Transformation linear="1.0 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0" translation="-0.0900 -0.32 0.0100"/>
         </Body>
         <Joint type="Ball" bvh="simRightUpLeg" kp="500.0" maxf="400.0" weight="0.5" lower="-3.14 -3.14 -3.14" upper="3.14 3.14 3.14" m="1e8" d="0.0" k="0.0">
@@ -115,7 +115,7 @@
         </Joint>
     </Node>
     <Node name="RightLeg" parent="RightUpLeg" >
-        <Body type="Box" mass="7.0" size="0.1 0.3699 0.1" contact="Off">
+        <Body type="Box" mass="7.0" size="0.1 0.3699 0.1" contact="On">
             <Transformation linear="1.0 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0" translation="-0.0955 -0.72 0.0116"/>
         </Body>
         <Joint type="Ball" bvh="simRightLeg" kp="400.0" maxf="400.0" weight="0.3" lower="-3.14 -3.14 -3.14" upper="3.14 3.14 3.14" m="1e8" d="0.0" k="0.0">

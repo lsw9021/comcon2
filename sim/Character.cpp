@@ -969,7 +969,7 @@ int
 Character::
 getBalanceType(const Eigen::VectorXd& force)
 {
-	return 1;
+	return 2;
 	double r = force.norm();
 	if(r<1e-6)
 		return 0;

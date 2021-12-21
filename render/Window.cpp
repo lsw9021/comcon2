@@ -103,6 +103,8 @@ render()
 		DARTRendering::drawSkeleton(mEnvironment->getSimCharacter()->getSkeleton(),mKinRenderOption);
 		mEnvironment->getSimCharacter()->popState();
 	}
+	
+	DARTRendering::drawSkeleton(mEnvironment->getObstacle(),mKinRenderOption);
 	{
 		Eigen::Vector3d end = 0.1*mEnvironment->getForceTargetPosition();
 		Eigen::Vector3d start = mEnvironment->getTargetBodyNode()->getTransform().translation();

@@ -22,6 +22,8 @@ void
 DARTRendering::
 drawSkeleton(const SkeletonPtr& skel,const Option& option)
 {
+	if(skel == nullptr)
+		return;
 	if(gRenderOption.texture_id == 0)
 		gRenderOption.texture_id = MeshUtils::buildTexture((std::string(ROOT_DIR)+"/data/object.png").c_str());
 	DrawUtils::enableTexture(option.texture_id);

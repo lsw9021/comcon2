@@ -48,7 +48,9 @@ public:
 	void setForceTargetPosition(const Eigen::Vector3d& f);
 	const Eigen::Vector3d& getAppliedForce(){return mForceTargetPosition;}
 
-	
+	void updateObstacle();
+
+	dart::dynamics::SkeletonPtr getObstacle(){return mObstacle;}
 private:
 	void recordState();
 
@@ -64,6 +66,8 @@ private:
 	kin::Character* mKinCharacter;
 
 	dart::dynamics::SkeletonPtr mGround;
+	dart::dynamics::SkeletonPtr mObstacle;
+	int mObstacleCount, mObstacleDuration;
 
 	Eigen::VectorXd mPrevPositions, mPrevPositions2;
 	Eigen::Vector3d mPrevCOM;
@@ -84,6 +88,8 @@ private:
 
 	bool mTask;
 	Eigen::VectorXd mStateTask;
+
+
 
 	
 	// double mdTheta;
