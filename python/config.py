@@ -7,6 +7,7 @@ config = {
 	'num_disc_sgd_iter' : 1,
 	'disc_sgd_minibatch_size' : 16,
 	'save_frequency' : [10, 200],
+	'force_function_update_frequency' : 10,
 	'policy' : {
 		'hidden':[256,256],
 		'std' : 0.1,

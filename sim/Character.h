@@ -61,11 +61,17 @@ public:
 	const Eigen::VectorXd& getU(){return mU;}
 	const Eigen::VectorXd& getdU(){return mdU;}
 
+	const Eigen::Vector3d& getUroot(){return mUroot;}
+	const Eigen::Vector3d& getdUroot(){return mdUroot;}
+
 	dart::dynamics::SkeletonPtr getSkeleton(){return mSkeleton;}
 	const std::map<int, int>& getKinematicMap(){return mKinematicMap;}
 
 	const Eigen::VectorXd& getCummulatedForces(){return mCummulatedForces;}
 	void clearCummulatedForces(){mCummulatedForces = Eigen::VectorXd::Zero(mSkeleton->getNumDofs());}
+
+	int getBalanceType(const Eigen::VectorXd& force);
+	int getCurrentBalanceType(){return mCurrentBalanceType;}
 private:
 	dart::dynamics::SkeletonPtr mSkeleton;
 	std::vector<dart::dynamics::BodyNode*> mEndEffectors;
@@ -79,12 +85,17 @@ private:
 	Eigen::Vector3d mDefaultVelocity;
 	bool mAppliedForce;
 	Eigen::VectorXd mU, mdU;
+	Eigen::Vector3d mUroot, mdUroot;
 	Eigen::Vector3d mdHat,mRootdHat;
 	Eigen::Vector3d mOffset, mForce;
+	Eigen::Vector3d mLeftFootPosition, mRightFootPosition;
 	std::string mBodyNodeName;
 
 	Eigen::Vector3d mURootBar;
 	Eigen::VectorXd mCummulatedForces;
+
+	std::vector<Eigen::VectorXd> mBoundaries;
+	int mCurrentBalanceType;
 };
 
 #endif

@@ -42,9 +42,10 @@ Environment()
 	}
 	//#0 balance
 	mKinCharacter->addMotion(base_bvh_file, 82, 85);
-	mKinCharacter->getMotion(0)->repeat(0,500);
+	mKinCharacter->getMotion(0)->repeat(0,100);
 	
-	// mKinCharacter->addMotion(base_bvh_file, "0:24:04 1:47:23");
+	mKinCharacter->getMotion(0)->repeat(0,500);
+	mKinCharacter->addMotion(base_bvh_file, "0:24:04 1:47:23");
 	//#1 Push Recovery
 	// mKinCharacter->addMotion(base_bvh_file, 172, 206);
 	// mKinCharacter->getMotion(0)->rotate(M_PI*1.02);
@@ -54,7 +55,8 @@ Environment()
 	// mKinCharacter->addMotion(base_bvh_file, "1:44:04 1:47:23");
 
 
-	double ground_height = mKinCharacter->computeMinFootHeight() - 0.15;
+	double dy = dynamic_cast<const BoxShape*>(mSimCharacter->getSkeleton()->getBodyNode("LeftFoot")->getShapeNodesWith<dart::dynamics::VisualAspect>()[0]->getShape().get())->getSize()[1]*0.5;
+	double ground_height = mKinCharacter->computeMinFootHeight() - 4*dy;
 	mGround = DARTUtils::createGround(ground_height);
 	mWorld->getConstraintSolver()->setCollisionDetector(dart::collision::BulletCollisionDetector::create());
 	mWorld->addSkeleton(mSimCharacter->getSkeleton());
@@ -73,6 +75,7 @@ Environment()
 	// this->setForceFunction(Eigen::VectorXd::Constant(stride, 3.0)+Eigen::VectorXd::Random(stride));
 	// mForceFunction = Eigen::VectorXd::Constant(stride, 10.0);
 	// this->setForceFunction(Eigen::VectorXd::Constant(stride, 10.0));
+
 
 	this->reset();
 }
@@ -160,7 +163,6 @@ reset()
 	mForceTimeCount = mMaxFrame - 30;
 
 
-
 	// mForceTimeCount = 30;
 	// mForceTime = 15;
 	// mForceIdleTime= 600;
@@ -175,18 +177,22 @@ step(const Eigen::VectorXd& action)
 	this->updateForceTargetPosition();
 	int num_sub_steps = mSimulationHz/mControlHz;
 
+	bool train = false;
 	//#1
-	Eigen::Vector3d com = mTargetBodyNode->getCOM();
-	Eigen::Vector3d force = mForceTargetPosition*( std::min(1.0, mForceTimeCount/(double)mForceTime + 0.3) );
-	if(mForceTimeCount<mForceTime)
-		mSimCharacter->addExternalForce(mTargetBodyNode, Eigen::Vector3d::Zero(), force);
-	mSimCharacter->step();
-
+	if(train)
+	{
+		Eigen::Vector3d com = mTargetBodyNode->getCOM();
+		Eigen::Vector3d force = mForceTargetPosition;
+		if(mForceTimeCount<mForceTime && mForceTargetPosition.norm()>1e-6)
+			mSimCharacter->addExternalForce(mTargetBodyNode, Eigen::Vector3d::Zero(), force);
+	}
 
 	//#2
 	std::string bn_name;
 	Eigen::Vector3d offset, force2;
 	mSimCharacter->getExternalForce(bn_name, offset, force2);
+	
+	mSimCharacter->step();
 
 	// mSimCharacter->step();
 	mSimCharacter->clearCummulatedForces();
@@ -196,15 +202,16 @@ step(const Eigen::VectorXd& action)
 	{
 		mSimCharacter->actuate(action);
 		//#1
-		if(mForceTimeCount<mForceTime)
-			mTargetBodyNode->addExtForce(force, Eigen::Vector3d::Zero());
+		if(train)
+			if(mForceTimeCount<mForceTime)
+				mTargetBodyNode->addExtForce(mForceTargetPosition, Eigen::Vector3d::Zero());
 
 		//#2
 		if(bn_name.size()!=0){
 			mSimCharacter->getSkeleton()->getBodyNode(bn_name)->addExtForce(force2, offset);
 		}
 
-		mWorld->step();
+		// mWorld->step();
 		// Check EOE
 		
 		
@@ -283,6 +290,9 @@ getStateAMPExperts()
 {
 	std::vector<Eigen::VectorXd> state_expert;
 	Eigen::VectorXd u = Eigen::VectorXd::Zero(mSimCharacter->getSkeleton()->getNumDofs());
+	int count = 0;
+	int importance = 10;
+	
 	for(auto motion : mKinCharacter->getMotions()){
 
 		int num_frames = motion->getNumFrames();
@@ -297,12 +307,19 @@ getStateAMPExperts()
 			state_amp.emplace_back(s);
 		}
 		int n = state_amp[0].rows();
+		Eigen::VectorXd s_idx;
+		if(count == 0)
+			s_idx  = Eigen::VectorXd::Zero(importance);
+		else
+			s_idx  = Eigen::VectorXd::Ones(importance);
+		
 		for(int i=0;i<state_amp.size()-1;i++)
 		{
-			Eigen::VectorXd ss1(n*2);
-			ss1<<state_amp[i], state_amp[i+1];
+			Eigen::VectorXd ss1(n*2 + importance);
+			ss1<<state_amp[i], state_amp[i+1], s_idx;
 			state_expert.emplace_back(ss1);
 		}
+		count++;
 	}
 
 	mStateAMPExperts = MathUtils::toEigenMatrix(state_expert);
@@ -316,53 +333,49 @@ recordState()
 
 	if(mTask){}
 
+	Eigen::Isometry3d T_ref = mSimCharacter->getReferenceTransform();
+	Eigen::Matrix3d R_ref = T_ref.linear();
+	Eigen::Matrix3d R_ref_inv = R_ref.transpose();
+
+	Eigen::Vector3d com = mSimCharacter->getSkeleton()->getCOM();
+	Eigen::Vector3d target_com_vel_local = R_ref_inv*mSimCharacter->getUroot();
+	target_com_vel_local[1] = 0.0;
+	double target_vel_norm = target_com_vel_local.norm();
+	double max_target_vel = 3.0;
+	if(target_vel_norm>max_target_vel){
+		target_com_vel_local /= target_vel_norm*max_target_vel;
+
+	}
+	Eigen::Vector3d com_vel = (com - mPrevCOM)*mControlHz;
+	com_vel[1] = 0.0;
+
+	Eigen::Vector3d com_vel_local = R_ref.transpose()*com_vel;
+	Eigen::Vector3d state_position = com_vel_local - target_com_vel_local;
+	state_position[1] = 0.0;
+	double ori = mSimCharacter->getReferenceOrientation();
+	double com_ang_vel = kin::Utils::computeAngleDiff(mPrevOrientation, ori)*mControlHz;
+
+	
+	mState.resize(state.rows() + 3 + 1);
+	mState<<state, state_position, com_ang_vel;
+
+	double angvel = std::abs(com_ang_vel);
+
+	mRewardPosition = 1.0;
+	if(target_com_vel_local.norm()>0.2)
 	{
-		Eigen::Isometry3d T_ref = mSimCharacter->getReferenceTransform();
-		Eigen::Matrix3d R_ref = T_ref.linear();
-		Eigen::Matrix3d R_ref_inv = R_ref.transpose();
+		double vel = (target_com_vel_local - MathUtils::projectOnVector(com_vel_local, target_com_vel_local)).norm();
+		mRewardPosition = std::exp(-1.5*vel*vel);
+		// mRewardPosition = std::exp(-1.5*vel*vel)*std::exp(-0.2*angvel);
+		// std::cout<<"1"<<" "<<mRewardPosition<<std::endl;
+	}
+	else
+	{
+		double vel = com_vel_local.norm();
 
-		Eigen::Vector3d com = mSimCharacter->getSkeleton()->getCOM();
-		Eigen::Vector3d target_com_vel_local = R_ref_inv*(mSimCharacter->getU().head<3>() - com);
-		target_com_vel_local[1] = 0.0;
-		double target_vel_norm = target_com_vel_local.norm();
-		double max_target_vel = 3.0;
-		if(target_vel_norm>max_target_vel){
-			target_com_vel_local /= target_vel_norm*max_target_vel;
-
-		}
-		Eigen::Vector3d com_vel = (com - mPrevCOM)*mControlHz;
-		com_vel[1] = 0.0;
-
-		Eigen::Vector3d com_vel_local = R_ref.transpose()*com_vel;
-		Eigen::Vector3d state_position = com_vel_local - target_com_vel_local;
-		state_position[1] = 0.0;
-		double ori = mSimCharacter->getReferenceOrientation();
-		double com_ang_vel = kin::Utils::computeAngleDiff(mPrevOrientation, ori)*mControlHz;
-
-		
-		mState.resize(state.rows() + 3 + 1);
-		mState<<state, state_position, com_ang_vel;
-		// mState.resize(state.rows() + 3);
-		// mState<<state, state_position;
-		double angvel = std::abs(com_ang_vel);
-
-		mRewardPosition = 1.0;
-		if(target_com_vel_local.norm()>0.2)
-		{
-			double vel = (target_com_vel_local - MathUtils::projectOnVector(com_vel_local, target_com_vel_local)).norm();
-			mRewardPosition = std::exp(-1.5*vel*vel)*std::exp(-0.2*angvel);
-			// std::cout<<"1"<<" "<<mRewardPosition<<std::endl;
-		}
-		else
-		{
-			double vel = com_vel_local.norm();
-
-			// mRewardPosition = std::exp(-5.0*vel*vel)*std::exp(-0.5*angvel);
-			// mRewardPosition = std::exp(-3.0*vel*vel);
-			mRewardPosition = 1.0;
-			// std::cout<<"2"<<" "<<mRewardPosition<<std::endl;
-		}
-		mRewardPosition = 1.0;
+		// mRewardPosition = std::exp(-5.0*vel*vel)*std::exp(-0.5*angvel);
+		mRewardPosition = std::exp(-3.0*vel*vel);
+		// std::cout<<"2"<<" "<<mRewardPosition<<std::endl;
 	}
 	
 
@@ -370,10 +383,23 @@ recordState()
 												mPrevPositions2);
 	Eigen::VectorXd s1 = mSimCharacter->getStateAMP(mSimCharacter->getPositions(),
 													mPrevPositions);
+	int importance = 10;
+	int balance = mSimCharacter->getCurrentBalanceType();
+	
 
-	mStateAMP.resize(s.rows()*2);
-	mStateAMP<<s,s1;
-
+	if(balance <2)
+	{
+		mRewardPosition = 1.0;
+		Eigen::VectorXd s_idx = Eigen::VectorXd::Zero(importance);
+		mStateAMP.resize(s.rows() + s1.rows() + s_idx.rows());
+		mStateAMP<<s,s1,s_idx;
+	}
+	else
+	{
+		Eigen::VectorXd s_idx = Eigen::VectorXd::Ones(importance);
+		mStateAMP.resize(s.rows() + s1.rows() + s_idx.rows());
+		mStateAMP<<s,s1,s_idx;
+	}
 	
 }
 Eigen::VectorXd

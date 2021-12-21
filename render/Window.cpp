@@ -22,7 +22,8 @@ Window()
 	mPlay(false),
 	mFocus(false),
 	mCapture(false),
-	mRenderContactForce(false)
+	mRenderContactForce(false),
+	mRenderTargetPosition(true)
 {
 	mEnvironment = new Environment();
 	
@@ -83,17 +84,19 @@ render()
 	glColor4f(0.4,0.4,1.2,0.8);DrawUtils::drawArrow3D(Eigen::Vector3d::Zero(), Eigen::Vector3d::UnitZ(), 0.2);
 	DARTRendering::drawSkeleton(mEnvironment->getSimCharacter()->getSkeleton(),mSimRenderOption);
 	int n = mEnvironment->getSimCharacter()->getSkeleton()->getNumDofs();
+	if(mRenderTargetPosition)
 	{
 		mEnvironment->getSimCharacter()->pushState();
 		Eigen::VectorXd pu = mEnvironment->getSimCharacter()->getPositions();
-		// Eigen::VectorXd p =mEnvironment->getSimCharacter()->computeOriginalPositions(pu);
-		Eigen::VectorXd p = pu.tail(n);
-		// p[5] += 2.0;
-		// p[4] += 1.0;
+		// Eigen::VectorXd p =mEnvironment->getSimCharacter()->computeDisplacedPositions(pu);
+		Eigen::VectorXd p = mEnvironment->getSimCharacter()->computeDisplacedPositions(pu);
+		// Eigen::VectorXd p = pu.tail(n);
+		// // p[5] += 2.0;
+		// // p[4] += 1.0;
 
-		p.head<6>().setZero();
+		// p.head<6>().setZero();
 		p[5] += 2.0;
-		p[4] += 1.0;
+		// p[5] += 1.0;
 		
 		mEnvironment->getSimCharacter()->getSkeleton()->setPositions(p);
 
@@ -107,13 +110,12 @@ render()
 		DrawUtils::drawArrow3D(start, start + end, 0.1);
 	}
 	
-	// {
-	// 	Eigen::Vector3d end = mEnvironment->getSimCharacter()->getU().head<3>();
-	// 	Eigen::Vector3d start = mEnvironment->getSimCharacter()->getSkeleton()->getBodyNode(0)->getCOM();
-	// 	Eigen::Isometry3d T_ref = mEnvironment->getSimCharacter()->getReferenceTransform();
-	// 	glColor4f(0,1,0,1);
-	// 	DrawUtils::drawArrow3D(start, end, 0.08);
-	// }
+	{
+		Eigen::Vector3d end = mEnvironment->getSimCharacter()->getUroot();
+		Eigen::Isometry3d T_ref = mEnvironment->getSimCharacter()->getReferenceTransform();
+		glColor4f(0,1,0,1);
+		DrawUtils::drawArrow3D(T_ref.translation()+0.1*Eigen::Vector3d::UnitY(), T_ref.translation()+0.1*Eigen::Vector3d::UnitY()+end, 0.08);
+	}
 
 	// for(int i=0;i<mCOMTrajectories.size();i++)
 	// {
@@ -276,7 +278,8 @@ reset()
 	if(mUseNN)
 	{
 		runner.attr("set_random_force_from_function")();
-		mEnvironment->setForceTargetPosition(0.9*runner.attr("force").cast<Eigen::Vector3d>());
+		mEnvironment->setForceTargetPosition(runner.attr("force").cast<Eigen::Vector3d>());
+		std::cout<<runner.attr("force_index").cast<double>()<<std::endl;
 	}
 
 }
@@ -295,13 +298,12 @@ step()
 	if(mTargetBodyNode!=nullptr)
 	{
 		Eigen::Vector3d force = 20.0*(mTargetPosition - mTargetBodyNode->getTransform()*mTargetLocalPosition);
-		std::cout<<force.norm()<<std::endl;
 		mEnvironment->getSimCharacter()->addExternalForce(mTargetBodyNode,mTargetLocalPosition,force);
 	}
 	mEnvironment->step(action);
 	// Eigen::VectorXd s_amp = mEnvironment->getStateAMP();
-	if(mEnvironment->eoe())
-		this->reset();
+	// if(mEnvironment->eoe())
+	// 	this->reset();
 }
 
 void
@@ -315,7 +317,7 @@ keyboard(unsigned char key, int x, int y)
 		case 'r':this->reset();break;
 		case 'C':mCapture=true;break;
 		case 'l':this->loadNN(mCheckPoint);break;
-		case '1':d_hat[0] *=0.1;break;
+		case '1':mRenderTargetPosition = !mRenderTargetPosition;break;
 		case '2':d_hat[0] /=0.1;break;
 		case '3':d_hat[1] *=0.1;break;
 		case '4':d_hat[1] /=0.1;break;
@@ -324,6 +326,7 @@ keyboard(unsigned char key, int x, int y)
 		case '7':d_hat = Eigen::Vector3d::Constant(1e-3);break;
 		case '8':d_hat *= 0.5;break;
 		case '9':d_hat *= 2.0;break;
+
 		case ' ':mPlay = !mPlay; break;
 		default:GLUTWindow3D::keyboard(key,x,y);break;
 	}

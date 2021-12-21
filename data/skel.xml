@@ -3,7 +3,7 @@
         <Body type="Sphere" mass="15.0" radius="0.0916" contact="On">
             <Transformation linear="1.0 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0" translation="0.0 -0.005 0.0 "/>
         </Body>
-        <Joint type="Free" bvh="simHips" kp="0.0" maxf="0.0" weight="1.0" m="1e8" d="0.0" k="0.0">
+        <Joint type="Free" bvh="simHips" kp="0.2" maxf="0.0" weight="1.0" m="1e8" d="0.0" k="0.0">
             <Transformation linear="1.0 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0" translation="0.0 0.0 0.0 "/>
         </Joint>
     </Node>

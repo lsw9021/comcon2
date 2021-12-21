@@ -34,7 +34,7 @@ class Runner(object):
 		self.disc = self.create_disc(config['disc'],torch.device('cpu'))
 		self.env_state = {}
 		stride = 16
-		self.env_state['force_function'] = 10.0 * np.ones(stride)
+		self.env_state['force_function'] = 1.0 * np.ones(stride)
 
 		self.num_samples = None
 
@@ -150,7 +150,10 @@ class Trainer(object):
 			self.policy_loc = self.runner.create_policy(config['policy'], self.device)
 			self.num_sgd_iter = config['num_sgd_iter']
 			self.sgd_minibatch_size = config['sgd_minibatch_size']
+			self.force_function_update_frequency = config['force_function_update_frequency']
 			self.env_state_loc = self.runner.env_state
+			self.forces = []
+			self.succs = []
 
 		elif is_root2_proc():
 			self.disc_loc = self.runner.create_disc(config['disc'], self.device)
@@ -271,6 +274,21 @@ class Trainer(object):
 		forces = samples['FORCE']
 		succs = samples['LEN_EPISODE']>180
 
+		self.forces.append(forces)
+		self.succs.append(succs)
+		cond = self.state_dict['num_iterations_so_far'] % self.force_function_update_frequency == 0
+		if cond == False:
+			log = {}
+			log['force_function'] = self.env_state_loc['force_function']
+
+			return log
+
+		forces = np.hstack(self.forces)
+		succs = np.hstack(self.succs)
+		self.forces = []
+		self.succs = []
+
+
 		n = len(self.env_state_loc['force_function'])
 		#compute Success rate
 		denom = np.zeros(n)
@@ -282,13 +300,13 @@ class Trainer(object):
 
 		cond = denom>1e-6
 		
-		default_value = 0.8
+		default_value = 0.9
 		success_rate = default_value*np.ones(n)
 		success_rate[cond] = numer[cond]/denom[cond]
 		rate = success_rate + 0.1
 
 		rate[success_rate<0.9] = 0.1/0.9*success_rate[success_rate<0.9] + 0.9
-		momentum = 0.9
+		momentum = 0.3
 
 		self.env_state_loc['force_function'] = momentum*self.env_state_loc['force_function'] + \
 											(1.0-momentum)*rate*self.env_state_loc['force_function']
@@ -468,16 +486,16 @@ class Trainer(object):
 			state['env_state'] = self.runner.env_state
 
 			state.update(self.state_dict)
-
-			torch.save(state, os.path.join(self.path,str(math.floor(self.state_dict['num_samples_so_far']/1e6))+'.pt'))
-			print('save at {}'.format(os.path.join(self.path,str(math.floor(self.state_dict['num_samples_so_far']/1e6))+'.pt')))
+			idx = self.state_dict['num_iterations_so_far'] // self.save_frequency[1]
+			torch.save(state, os.path.join(self.path,str(idx)+'.pt'))
+			print('save at {}'.format(os.path.join(self.path,str(idx)+'.pt')))
 			
 	def load(self, path):
 		if is_root_proc():
 			print(f'load {path}')
 			state = torch.load(path)
 			self.policy_loc.load_state_dict(state['policy_state_dict'])
-			# self.env_state_loc = state['env_state']
+			self.env_state_loc = state['env_state']
 
 			for key in self.state_dict.keys():
 				self.state_dict[key] = state[key]

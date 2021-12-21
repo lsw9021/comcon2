@@ -49,6 +49,7 @@ protected:
 	bool mUseNN;
 
 	bool mRenderContactForce;
+	bool mRenderTargetPosition;
 	py::scoped_interpreter guard;
 	py::object mm,mns,sys_module;
 	py::module trainer_md;

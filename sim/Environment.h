@@ -44,8 +44,11 @@ public:
 	// const Eigen::VectorXd& getForceFunction(){return mForceFunction;}
 	// void setForceFunction(const Eigen::VectorXd& f);
 	// double getMaxForce(double phi);
+
 	void setForceTargetPosition(const Eigen::Vector3d& f);
 	const Eigen::Vector3d& getAppliedForce(){return mForceTargetPosition;}
+
+	
 private:
 	void recordState();
 
@@ -82,6 +85,7 @@ private:
 	bool mTask;
 	Eigen::VectorXd mStateTask;
 
+	
 	// double mdTheta;
 	// Eigen::VectorXd mForceFunction;
 };
