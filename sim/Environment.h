@@ -67,6 +67,10 @@ private:
 
 	dart::dynamics::SkeletonPtr mGround;
 	dart::dynamics::SkeletonPtr mObstacle;
+	bool mContactObstacle;
+	Eigen::Vector3d mObstacleForce;
+	dart::dynamics::BodyNode* mObstacleBodyNode;
+
 	int mObstacleCount, mObstacleDuration;
 
 	Eigen::VectorXd mPrevPositions, mPrevPositions2;

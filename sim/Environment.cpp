@@ -156,8 +156,10 @@ reset()
 	// double dhat = dart::math::Random::uniform<double>(0.0,1.0);
 	// double dhat = 0.5;
 	double dhat = 1.0;
+	Eigen::Vector3d dhat_vec = Eigen::Vector3d::Constant(dhat);
+	dhat_vec[1] = 0.0;
 	// std::cout<<dhat<<std::endl;
-	mSimCharacter->setRootDHat(Eigen::Vector3d::Constant(dhat));
+	mSimCharacter->setRootDHat(dhat_vec);
 
 	mRewardPosition = 1.0;
 	mRewardTask = 1.0;
@@ -175,6 +177,9 @@ reset()
 
 	mObstacleCount = 61;
 	mObstacleDuration = 60;
+	mContactObstacle = false;
+	mObstacleBodyNode = nullptr;
+	mObstacleForce = Eigen::Vector3d::Zero();
 	this->updateForceTargetPosition();
 	this->updateObstacle();
 	this->recordState();
@@ -186,7 +191,7 @@ step(const Eigen::VectorXd& action)
 	this->updateForceTargetPosition();
 	int num_sub_steps = mSimulationHz/mControlHz;
 
-	bool train = true;
+	bool train = false;
 	//#1
 	if(train)
 	{
@@ -202,38 +207,35 @@ step(const Eigen::VectorXd& action)
 	mSimCharacter->getExternalForce(bn_name, offset, force2);
 	
 	//#3
-	auto cr = mWorld->getConstraintSolver()->getLastCollisionResult();
-	for(int j=0;j<cr.getNumContacts();j++)
-	{
-		auto contact = cr.getContact(j);
-		auto shapeFrame1 = const_cast<dart::dynamics::ShapeFrame*>(contact.collisionObject1->getShapeFrame());
-		auto shapeFrame2 = const_cast<dart::dynamics::ShapeFrame*>(contact.collisionObject2->getShapeFrame());
 
-		auto bn1 = shapeFrame1->asShapeNode()->getBodyNodePtr();
-		auto bn2 = shapeFrame2->asShapeNode()->getBodyNodePtr();
+	// auto cr = mWorld->getConstraintSolver()->getLastCollisionResult();
+	// if(mObstacleCount != 0)
+	// for(int j=0;j<cr.getNumContacts();j++)
+	// {
+	// 	auto contact = cr.getContact(j);
+	// 	auto shapeFrame1 = const_cast<dart::dynamics::ShapeFrame*>(contact.collisionObject1->getShapeFrame());
+	// 	auto shapeFrame2 = const_cast<dart::dynamics::ShapeFrame*>(contact.collisionObject2->getShapeFrame());
 
-		auto skel1 = bn1->getSkeleton();
-		auto skel2 = bn2->getSkeleton();
+	// 	auto bn1 = shapeFrame1->asShapeNode()->getBodyNodePtr();
+	// 	auto bn2 = shapeFrame2->asShapeNode()->getBodyNodePtr();
 
-		if(skel1->getName() == "humanoid" && skel2->getName() == "Box"){
-			Eigen::Vector3d f = contact.force;
-			Eigen::Vector3d p = bn1->getTransform().inverse()*contact.point;
-			mSimCharacter->addExternalForce(bn1, p, f);
-		}
-		else if(skel1->getName() == "Box" && skel2->getName() == "humanoid"){
-			Eigen::Vector3d f = -contact.force;
-			Eigen::Vector3d p = bn2->getTransform().inverse()*contact.point;
-			mSimCharacter->addExternalForce(bn2, p, f);
-		}
+	// 	auto skel1 = bn1->getSkeleton();
+	// 	auto skel2 = bn2->getSkeleton();
 
-	}
+		
+
+	// }
+	if(mContactObstacle)
+		mSimCharacter->addExternalForce(mObstacleBodyNode, Eigen::Vector3d::Zero(), mObstacleForce);
 	this->updateObstacle();
 	mSimCharacter->step();
 
-	// mSimCharacter->step();
+	// mSimCharacter->step()
 	mSimCharacter->clearCummulatedForces();
 	bool contactRF = true;
 	bool contactLF = true;
+	mContactObstacle = false;
+	mObstacleForce = Eigen::Vector3d::Zero();
 	for(int i=0;i<num_sub_steps;i++)
 	{
 		mSimCharacter->actuate(action);
@@ -284,6 +286,16 @@ step(const Eigen::VectorXd& action)
 			if(skel1->getName() == "ground" && skel2->getName() == "humanoid"){
 				mContactEOE = true;
 				break;
+			}
+			if(skel1->getName() == "humanoid" && skel2->getName() == "Box"){
+				mContactObstacle = true;
+				mObstacleBodyNode = bn1;
+				mObstacleForce += contact.force;
+			}
+			else if(skel1->getName() == "Box" && skel2->getName() == "humanoid"){
+				mContactObstacle = true;
+				mObstacleBodyNode = bn2;
+				mObstacleForce -= contact.force;
 			}
 
 		}
@@ -492,19 +504,19 @@ updateObstacle()
 	mObstacle = DARTUtils::createBox(2000.0, size);
 
 	Eigen::Vector3d com = mSimCharacter->getSkeleton()->getBodyNode("Spine1")->getCOM();
-	double r = 1.0;
+	double r = 2.0;
 	double theta = dart::math::Random::uniform<double>(0, 2.0*M_PI);
 	Eigen::Vector3d dir(r*std::sin(theta), 0.0, r*std::cos(theta));
 	com += dir;
 
-	double speed = dart::math::Random::uniform<double>(3.0, 6.0);
+	double speed = dart::math::Random::uniform<double>(3.0, 4.0);
 	Eigen::Vector3d linvel = -speed*dir;
 
 	Eigen::VectorXd pos=Eigen::VectorXd::Zero(6);
 	Eigen::VectorXd vel=Eigen::VectorXd::Zero(6);
+	linvel[1] += 1.5;
 	pos.tail<3>() = com;
 	vel.tail<3>() = linvel;
-	vel[1] += 1.0;
 	mObstacle->setPositions(pos);
 	mObstacle->setVelocities(vel);
 

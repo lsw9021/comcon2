@@ -320,7 +320,7 @@ addExternalForce(dart::dynamics::BodyNode* bn,
 	}
 	else
 	{
-		mdHat = Eigen::Vector3d::Constant(0.8);
+		mdHat = Eigen::Vector3d::Constant(0.7);
 
 		int n = mSkeleton->getNumDofs();
 
@@ -328,7 +328,8 @@ addExternalForce(dart::dynamics::BodyNode* bn,
 		J.block<3,3>(0,0).setZero();
 		mdU = h*J.transpose()*mdHat.cwiseProduct(force);
 
-		double root_inv_mass = 0.4;
+
+		double root_inv_mass = 0.1;
 		mdUroot = h*root_inv_mass*mRootdHat.cwiseProduct(force);
 	}
 	// Eigen::MatrixXd kp_inv = mKp.cwiseInverse().asDiagonal();
