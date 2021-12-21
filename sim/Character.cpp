@@ -26,14 +26,15 @@ Character(SkeletonPtr& skel)
 	// mDefaultVelocity = Eigen::Vector3d(0,0,1.4);
 
 	Eigen::VectorXd ankle_boundary(16);
-	ankle_boundary<<9.11711124, 10.56229754, 13.29558392, 21.08746867, 27.80417555, 28.32878751,
-					 28.7545167,  29.10390672, 28.99900067, 29.10390672, 28.7545167,  28.32878751,
-					 27.80417555, 21.08746867, 13.29558392, 10.56229754;
+	ankle_boundary<<8.39154503,  8.82749394, 11.4503686 , 16.22168304, 18.44228347, 21.12059897,
+ 	21.91645705, 22.68074787 ,21.40073041 ,22.68074787, 21.91645705 ,21.12059897,
+	18.44228347 ,16.22168304 ,11.4503686 ,  8.82749394;
+	
 	Eigen::VectorXd hip_boundary(16);
 	hip_boundary<<32.74434118, 31.89924462, 45.16855115, 54.18451161, 63.49003247, 78.95132497,
 				 85.65653504, 74.13815805, 69.79092297, 74.13815805, 85.65653504, 78.95132497,
 				 63.49003247, 54.18451161, 45.16855115, 31.89924462;
-
+	hip_boundary*=0.5;
 	mBoundaries.emplace_back(ankle_boundary);
 	mBoundaries.emplace_back(hip_boundary);		 
 	this->clearCummulatedForces();
@@ -311,7 +312,7 @@ addExternalForce(dart::dynamics::BodyNode* bn,
 		J0_int.leftCols(6).setZero();
 		J1.leftCols(6).setZero();
 
-		Eigen::MatrixXd J = -0.2*(J0 - J0_int) + 3.0*J1;
+		Eigen::MatrixXd J = -0.3*(J0 - J0_int) + 10.0*J1;
 
 		// this->popState();
 
@@ -968,6 +969,7 @@ int
 Character::
 getBalanceType(const Eigen::VectorXd& force)
 {
+	return 1;
 	double r = force.norm();
 	if(r<1e-6)
 		return 0;

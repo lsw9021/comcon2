@@ -44,7 +44,8 @@ Environment()
 	mKinCharacter->addMotion(base_bvh_file, 82, 85);
 	mKinCharacter->getMotion(0)->repeat(0,100);
 	
-	mKinCharacter->getMotion(0)->repeat(0,500);
+	mKinCharacter->addMotion(base_bvh_file, 82, 85);
+	mKinCharacter->getMotion(1)->repeat(0,500);
 	mKinCharacter->addMotion(base_bvh_file, "0:24:04 1:47:23");
 	//#1 Push Recovery
 	// mKinCharacter->addMotion(base_bvh_file, 172, 206);
@@ -177,7 +178,7 @@ step(const Eigen::VectorXd& action)
 	this->updateForceTargetPosition();
 	int num_sub_steps = mSimulationHz/mControlHz;
 
-	bool train = false;
+	bool train = true;
 	//#1
 	if(train)
 	{
@@ -211,7 +212,7 @@ step(const Eigen::VectorXd& action)
 			mSimCharacter->getSkeleton()->getBodyNode(bn_name)->addExtForce(force2, offset);
 		}
 
-		// mWorld->step();
+		mWorld->step();
 		// Check EOE
 		
 		
@@ -291,7 +292,7 @@ getStateAMPExperts()
 	std::vector<Eigen::VectorXd> state_expert;
 	Eigen::VectorXd u = Eigen::VectorXd::Zero(mSimCharacter->getSkeleton()->getNumDofs());
 	int count = 0;
-	int importance = 10;
+	int importance = 1;
 	
 	for(auto motion : mKinCharacter->getMotions()){
 
@@ -383,7 +384,7 @@ recordState()
 												mPrevPositions2);
 	Eigen::VectorXd s1 = mSimCharacter->getStateAMP(mSimCharacter->getPositions(),
 													mPrevPositions);
-	int importance = 10;
+	int importance = 1;
 	int balance = mSimCharacter->getCurrentBalanceType();
 	
 

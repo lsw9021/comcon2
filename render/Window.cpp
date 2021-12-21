@@ -88,7 +88,7 @@ render()
 	{
 		mEnvironment->getSimCharacter()->pushState();
 		Eigen::VectorXd pu = mEnvironment->getSimCharacter()->getPositions();
-		// Eigen::VectorXd p =mEnvironment->getSimCharacter()->computeDisplacedPositions(pu);
+		// Eigen::VectorXd p =mEnvironment->getSimCharacter()->computeOriginalPositions(pu);
 		Eigen::VectorXd p = mEnvironment->getSimCharacter()->computeDisplacedPositions(pu);
 		// Eigen::VectorXd p = pu.tail(n);
 		// // p[5] += 2.0;
