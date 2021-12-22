@@ -69,7 +69,7 @@ Environment()
 	mWorld->setTimeStep(1.0/(double)mSimulationHz);
 	mWorld->setGravity(Eigen::Vector3d(0,-9.81,0.0));
 
-	mSimCharacter->getSkeleton()->setSelfCollisionCheck(false);
+	mSimCharacter->getSkeleton()->setSelfCollisionCheck(true);
 	mSimCharacter->getSkeleton()->setAdjacentBodyCheck(false);
 
 	int dim_action = getDimAction();

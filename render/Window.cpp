@@ -84,6 +84,31 @@ GLfloat fogColor[] = {1,1,1,1};
 		mTargetRenderOption.texture_id = MeshUtils::buildTexture((std::string(ROOT_DIR)+"/data/textures/targetchar.png").c_str());
 	}
 	glColor4f(0.4,0.4,1.2,0.2);
+	float y = mEnvironment->getGround()->getBodyNode(0)->getTransform().translation()[1] +
+	 		dynamic_cast<const BoxShape*>(mEnvironment->getGround()->getBodyNode(0)->getShapeNodesWith<VisualAspect>()[0]->getShape().get())->getSize()[1]*0.5;
+	glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
+	glDisable(GL_LIGHTING);
+	double width = 0.005;
+	int count = 0;
+	glBegin(GL_QUADS);
+	for(double x = -100.0;x<100.01;x+=1.0)
+	{
+		for(double z = -100.0;z<100.01;z+=1.0)
+		{
+			if(count%2==0)
+				glColor3f(216.0/255.0,211.0/255.0,204.0/255.0);			
+			else
+				glColor3f(216.0/255.0-0.1,211.0/255.0-0.1,204.0/255.0-0.1);
+			count++;
+			glVertex3f(x,y,z);
+			glVertex3f(x+1.0,y,z);
+			glVertex3f(x+1.0,y,z+1.0);
+			glVertex3f(x,y,z+1.0);
+		}
+	}
+	glEnd();
+	glEnable(GL_LIGHTING);
+
 	
 	// glColor4f(1.2,0.4,0.4,0.8);DrawUtils::drawArrow3D(Eigen::Vector3d::Zero(), Eigen::Vector3d::UnitX(), 0.2);
 	// glColor4f(0.4,1.2,0.4,0.8);DrawUtils::drawArrow3D(Eigen::Vector3d::Zero(), Eigen::Vector3d::UnitY(), 0.2);
@@ -268,10 +293,10 @@ GLfloat fogColor[] = {1,1,1,1};
 
 
 
-	float y = mEnvironment->getGround()->getBodyNode(0)->getTransform().translation()[1] +
-			dynamic_cast<const BoxShape*>(mEnvironment->getGround()->getBodyNode(0)->getShapeNodesWith<VisualAspect>()[0]->getShape().get())->getSize()[1]*0.5;
+	// float y = mEnvironment->getGround()->getBodyNode(0)->getTransform().translation()[1] +
+	// 		dynamic_cast<const BoxShape*>(mEnvironment->getGround()->getBodyNode(0)->getShapeNodesWith<VisualAspect>()[0]->getShape().get())->getSize()[1]*0.5;
 
-	DrawUtils::drawGround(y,100.0);
+	// DrawUtils::drawGround(y,100.0);
 	
 	if(mCapture)
 		this->capture_screen();
@@ -336,6 +361,7 @@ keyboard(unsigned char key, int x, int y)
 		case 'r':this->reset();break;
 		case 'f':mFocus = !mFocus;break;
 		case 'C':mCapture=true;break;
+		case 'x':mEnvironment->forceCreateObstacle();break;
 		case 'l':this->loadNN(mCheckPoint);break;
 		case '1':mRenderTargetPosition = !mRenderTargetPosition;break;
 		case '2':d_hat[0] /=0.1;break;
