@@ -143,12 +143,12 @@ GLfloat fogColor[] = {1,1,1,1};
 	// 	DrawUtils::drawArrow3D(start, start + end, 0.1);
 	// }
 	
-	// {
-	// 	Eigen::Vector3d end = mEnvironment->getSimCharacter()->getUroot();
-	// 	Eigen::Isometry3d T_ref = mEnvironment->getSimCharacter()->getReferenceTransform();
-	// 	glColor4f(0,1,0,1);
-	// 	DrawUtils::drawArrow3D(T_ref.translation()+0.1*Eigen::Vector3d::UnitY(), T_ref.translation()+0.1*Eigen::Vector3d::UnitY()+end, 0.08);
-	// }
+	{
+		Eigen::Vector3d end = mEnvironment->getSimCharacter()->getUroot();
+		Eigen::Isometry3d T_ref = mEnvironment->getSimCharacter()->getReferenceTransform();
+		glColor4f(0,1,0,1);
+		DrawUtils::drawArrow3D(T_ref.translation()+0.1*Eigen::Vector3d::UnitY(), T_ref.translation()+0.1*Eigen::Vector3d::UnitY()+end, 0.08);
+	}
 
 	// for(int i=0;i<mCOMTrajectories.size();i++)
 	// {

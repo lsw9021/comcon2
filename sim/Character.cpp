@@ -38,6 +38,7 @@ Character(SkeletonPtr& skel)
 	mBoundaries.emplace_back(ankle_boundary);
 	mBoundaries.emplace_back(hip_boundary);		 
 	this->clearCummulatedForces();
+	mLight = 0;
 }
 void
 Character::
@@ -272,6 +273,7 @@ addExternalForce(dart::dynamics::BodyNode* bn,
 	mBodyNodeName = bn->getName();
 	mForce[1] = 0.0;
 	mCurrentBalanceType = this->getBalanceType(mForce);
+	mLight = 0;
 	// if(0)
 	if(mCurrentBalanceType == 0)
 	{
@@ -564,10 +566,13 @@ step()
 		}
 		{
 			double m = 1.0;
-			double k = 60.0;
+			double k = 120.0;
 			double d = 2.0*std::sqrt(k);
+
 			Eigen::Vector3d u = mUroot;
 			Eigen::Vector3d fn = -k*(u);
+			if(mLight == 1)
+				fn = fn + k*1.4*Eigen::Vector3d::UnitZ();
 			Eigen::Vector3d b1 =  h*fn + h*k*u;
 			Eigen::Vector3d b2 = u;
 			double denom = 1.0/(m + h*d + h*h*k);
@@ -797,6 +802,7 @@ computeDisplacedPositions(const Eigen::VectorXd& p, const Eigen::VectorXd& u)
 			// ret.segment<3>(0) = BallJoint::convertToPositions(R0*R1);
 		}
 	}
+
 	return ret;
 }
 Eigen::VectorXd

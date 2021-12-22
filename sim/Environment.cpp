@@ -192,6 +192,11 @@ step(const Eigen::VectorXd& action)
 	int num_sub_steps = mSimulationHz/mControlHz;
 
 	bool train = false;
+	double r = dart::math::Random::uniform<double>(0.0, 1.0);
+	if(r<0.02)
+	{
+		mSimCharacter->toggleLight();
+	}
 	//#1
 	if(train)
 	{
@@ -433,7 +438,6 @@ recordState()
 													mPrevPositions);
 	int importance = 1;
 	int balance = mSimCharacter->getCurrentBalanceType();
-	
 
 	if(balance <2)
 	{
@@ -505,7 +509,7 @@ updateObstacle()
 
 	Eigen::Vector3d com = mSimCharacter->getSkeleton()->getBodyNode("Spine1")->getCOM();
 	double r = 2.0;
-	double theta = dart::math::Random::uniform<double>(0, 2.0*M_PI);
+	double theta = dart::math::Random::uniform<double>(-0.2*M_PI, 0.2*M_PI);
 	Eigen::Vector3d dir(r*std::sin(theta), 0.0, r*std::cos(theta));
 	com += dir;
 
@@ -522,5 +526,13 @@ updateObstacle()
 
 	mWorld->addSkeleton(mObstacle);
 	mObstacleCount = 0;
-	mObstacleDuration = 60;
+	// mObstacleDuration = 3000;
+	double v = dart::math::Random::uniform<double>(0.0, 1.0);
+	if(v<0.5)
+		mObstacleDuration = 60;
+	else{
+		mObstacleDuration = 300;
+		vel.setZero();
+		mObstacle->setVelocities(vel);
+	}
 }
