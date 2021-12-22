@@ -17,7 +17,61 @@ drawJoints(const SkeletonPtr& skel)
 {
 
 }
+void
+DARTRendering::
+drawObstacle(const dart::dynamics::SkeletonPtr& skel,const Option& option)
+{
+	if(skel == nullptr)
+		return;
 
+	for(int i=0;i<skel->getNumBodyNodes();i++)
+	{
+		auto bn = skel->getBodyNode(i);
+		auto shapeNodes = bn->getShapeNodesWith<VisualAspect>();
+
+		auto T = shapeNodes.back()->getTransform();
+		
+		auto shape = shapeNodes.back()->getShape().get();
+
+		glEnable(GL_LIGHTING);
+		glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
+		glEnable(GL_COLOR_MATERIAL);
+		glPushMatrix();
+		glMultMatrixd(T.data());
+		if(shape->is<SphereShape>())
+		{
+			const auto* sphere = dynamic_cast<const SphereShape*>(shape);
+			glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
+			Eigen::Vector3d color = DrawUtils::stringToRGB("929292");
+			glColor3f(color[0],color[1],color[2]);
+			DrawUtils::drawSphere(sphere->getRadius(), option.draw_mode);
+
+			glDisable(GL_LIGHTING);
+			glDisable(GL_TEXTURE_2D);
+			glColor3f(0.0,0.0,0.0);
+			DrawUtils::drawSphere(sphere->getRadius()*1.01,DrawUtils::eDrawWireSimple);
+			glEnable(GL_TEXTURE_2D);
+			glEnable(GL_LIGHTING);
+		}
+		else if (shape->is<BoxShape>())
+		{
+			const auto* box = dynamic_cast<const BoxShape*>(shape);
+			glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
+			Eigen::Vector3d color = DrawUtils::stringToRGB("929292");
+			glColor3f(color[0],color[1],color[2]);
+			DrawUtils::drawBox(Eigen::Vector3d::Zero(), box->getSize(), option.draw_mode);
+			glDisable(GL_LIGHTING);
+			glDisable(GL_TEXTURE_2D);
+			glColor3f(0.0,0.0,0.0);
+			DrawUtils::drawBox(Eigen::Vector3d::Zero(), box->getSize(), DrawUtils::eDrawWireSimple);
+			glEnable(GL_TEXTURE_2D);
+			glEnable(GL_LIGHTING);
+	    	
+		}
+
+		glPopMatrix();
+	}
+}
 void
 DARTRendering::
 drawSkeleton(const SkeletonPtr& skel,const Option& option)
