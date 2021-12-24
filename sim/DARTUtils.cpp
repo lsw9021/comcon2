@@ -416,7 +416,7 @@ createDoor(const Eigen::Vector3d& c0, double width)
 }
 dart::dynamics::SkeletonPtr
 DARTUtils::
-createBox(double density, const Eigen::Vector3d& size, const std::string& type)
+createBox(double density, const Eigen::Vector3d& size, bool contact, const std::string& type)
 {
 	SkeletonPtr skel = Skeleton::create("Box");
 	ShapePtr shape = makeBoxShape(size);
@@ -428,7 +428,10 @@ createBox(double density, const Eigen::Vector3d& size, const std::string& type)
 	else if(type == "Weld")
 		props = makeWeldJointProperties("root",Eigen::Isometry3d::Identity(),Eigen::Isometry3d::Identity());
 	auto bn = makeBodyNode(skel,nullptr,props,type,inertia);
-	bn->createShapeNodeWith<VisualAspect,CollisionAspect,DynamicsAspect>(shape);
+	if(contact)
+		bn->createShapeNodeWith<VisualAspect,CollisionAspect,DynamicsAspect>(shape);
+	else
+		bn->createShapeNodeWith<VisualAspect,DynamicsAspect>(shape);
 
 	return skel;	
 }

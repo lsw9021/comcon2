@@ -115,6 +115,35 @@ GLfloat fogColor[] = {1,1,1,1};
 	// glColor4f(0.4,0.4,1.2,0.8);DrawUtils::drawArrow3D(Eigen::Vector3d::Zero(), Eigen::Vector3d::UnitZ(), 0.2);
 	DARTRendering::drawSkeleton(mEnvironment->getSimCharacter()->getSkeleton(),mSimRenderOption);
 	int n = mEnvironment->getSimCharacter()->getSkeleton()->getNumDofs();
+
+	
+
+	{
+		auto simchar = mEnvironment->getSimCharacter();
+		auto kinchar2 = mEnvironment->getKinCharacter2();
+		int kin_frame = mEnvironment->getKinFrame();
+		Eigen::VectorXd sim_pose2;
+		simchar->computeSimPose(kinchar2->getMotion(0)->getPosition(kin_frame),kinchar2->getMotion(0)->getRotation(kin_frame),sim_pose2);
+		mEnvironment->getSimCharacter()->pushState();
+		mEnvironment->getSimCharacter()->getSkeleton()->setPositions(sim_pose2);
+
+		DARTRendering::drawSkeleton(mEnvironment->getSimCharacter()->getSkeleton(),mKinRenderOption);
+		mEnvironment->getSimCharacter()->popState();
+	}
+		
+	// {
+	// 	auto simchar = mEnvironment->getSimCharacter();
+	// 	auto kinchar2 = mEnvironment->getKinCharacter();
+	// 	int kin_frame = mEnvironment->getKinFrame();
+	// 	Eigen::VectorXd sim_pose2;
+	// 	simchar->computeSimPose(kinchar2->getMotion(0)->getPosition(kin_frame),kinchar2->getMotion(0)->getRotation(kin_frame),sim_pose2);
+	// 	mEnvironment->getSimCharacter()->pushState();
+	// 	mEnvironment->getSimCharacter()->getSkeleton()->setPositions(sim_pose2);
+
+	// 	DARTRendering::drawSkeleton(mEnvironment->getSimCharacter()->getSkeleton(),mKinRenderOption);
+	// 	mEnvironment->getSimCharacter()->popState();
+	// }
+		
 	// if(mRenderTargetPosition)
 	// {
 	// 	mEnvironment->getSimCharacter()->pushState();
@@ -346,8 +375,8 @@ step()
 	
 
 	// Eigen::VectorXd s_amp = mEnvironment->getStateAMP();
-	// if(mEnvironment->eoe())
-	// 	this->reset();
+	/*if(mEnvironment->eoe())
+		this->reset();*/
 }
 
 void

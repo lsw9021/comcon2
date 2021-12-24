@@ -573,8 +573,8 @@ step()
 
 			Eigen::Vector3d u = mUroot;
 			Eigen::Vector3d fn = -k*(u);
-			if(mLight == 1)
-				fn = fn + k*mTargetSpeed*Eigen::Vector3d::UnitZ();
+			// if(mLight == 1)
+			// 	fn = fn + k*mTargetSpeed*Eigen::Vector3d::UnitZ();
 			Eigen::Vector3d b1 =  h*fn + h*k*u;
 			Eigen::Vector3d b2 = u;
 			double denom = 1.0/(m + h*d + h*h*k);

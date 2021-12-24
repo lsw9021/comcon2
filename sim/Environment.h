@@ -52,6 +52,10 @@ public:
 	void forceCreateObstacle(){mObstacleCount = 999999;}
 
 	dart::dynamics::SkeletonPtr getObstacle(){return mObstacle;}
+
+	kin::Character* getKinCharacter(){return mKinCharacter;}
+	kin::Character* getKinCharacter2(){return mKinCharacter2;}
+	int getKinFrame(){return mKinFrame;}
 private:
 	void recordState();
 
@@ -97,7 +101,13 @@ private:
 	int mToggleCount, mToggleDuration;
 	bool mCreateObstacle;
 
-	
+
+	kin::Character* mKinCharacter2;
+	std::vector<Eigen::Vector6d> mKinCharacterHandPositions;
+	std::vector<Eigen::Vector6d> mKinCharacterHandVelocities;
+	dart::constraint::BallJointConstraintPtr mWeldConstraint;
+	int mKinFrame;
+
 	// double mdTheta;
 	// Eigen::VectorXd mForceFunction;
 };
