@@ -31,6 +31,16 @@ Environment()
 
 	std::string base_bvh_file = std::string(ROOT_DIR)+"/data/bvh/walk_long.bvh";
 	std::string walk_file = std::string(ROOT_DIR)+"/data/bvh/walk.bvh";
+
+	std::string locofile1 = std::string(ROOT_DIR)+"/data/bvh/LocomotionFlat01_000.bvh";
+	std::string locofile6 = std::string(ROOT_DIR)+"/data/bvh/LocomotionFlat06_000.bvh";
+	std::string locofile7 = std::string(ROOT_DIR)+"/data/bvh/LocomotionFlat07_000.bvh";
+	std::string locofile8 = std::string(ROOT_DIR)+"/data/bvh/LocomotionFlat08_000.bvh";
+	std::string locofile_mirror1 = std::string(ROOT_DIR)+"/data/bvh/LocomotionFlat01_000_mirror.bvh";
+	std::string locofile_mirror6 = std::string(ROOT_DIR)+"/data/bvh/LocomotionFlat06_000_mirror.bvh";
+	std::string locofile_mirror7 = std::string(ROOT_DIR)+"/data/bvh/LocomotionFlat07_000_mirror.bvh";
+	std::string locofile_mirror8 = std::string(ROOT_DIR)+"/data/bvh/LocomotionFlat08_000_mirror.bvh";
+
 	auto kinskel = kin::Skeleton::create(base_bvh_file);
 	mKinCharacter = new kin::Character(kinskel);
 	
@@ -42,13 +52,37 @@ Environment()
 		mSimCharacter->addKinematicMap(sid, kid);		
 	}
 	//#0 balance
-	mKinCharacter->addMotion(base_bvh_file, 82, 85);
-	mKinCharacter->getMotion(0)->repeat(0,100);
+	// mKinCharacter->addMotion(base_bvh_file, 82, 85);
+	// mKinCharacter->getMotion(0)->repeat(0,100);
 	
+	// mKinCharacter->addMotion(base_bvh_file, 82, 85);
+	// mKinCharacter->getMotion(1)->repeat(0,500);
+	// mKinCharacter->addMotion(base_bvh_file, "0:24:04 1:47:23");
+
+	// mKinCharacter->addMotion(locofile2, 60, 300);
 	mKinCharacter->addMotion(base_bvh_file, 82, 85);
-	mKinCharacter->getMotion(1)->repeat(0,500);
-	mKinCharacter->addMotion(base_bvh_file, "0:24:04 1:47:23");
+	//walk
+	mKinCharacter->addMotion(locofile6, 1500, 1950);
+	mKinCharacter->addMotion(locofile_mirror6, 1500, 1950);
+	mKinCharacter->addMotion(locofile8, 30, 400);
+	mKinCharacter->addMotion(locofile_mirror8, 30, 400);
+	//run
+	mKinCharacter->addMotion(locofile6, 240, 700);
+	mKinCharacter->addMotion(locofile_mirror6, 240, 700);
+	mKinCharacter->addMotion(locofile1, 120, 270);
+	mKinCharacter->addMotion(locofile_mirror1, 120, 270);
+	mKinCharacter->addMotion(locofile7, 60, 700);
+	mKinCharacter->addMotion(locofile_mirror7, 60, 700);
 	
+	
+	//redundant
+	// mKinCharacter->addMotion(base_bvh_file, "0:24:04 1:47:23");
+	
+
+
+
+
+
 	//#1 Push Recovery
 	// mKinCharacter->addMotion(base_bvh_file, 172, 206);
 	// mKinCharacter->getMotion(0)->rotate(M_PI*1.02);
@@ -132,12 +166,13 @@ reset()
 	Eigen::MatrixXd angular_velocity;
 
 	//#0 balance
-	mKinCharacter->samplePoseFromMotion(0,
-		position,rotation,linear_velocity,angular_velocity,position_prev,rotation_prev);
+	// mKinCharacter->samplePoseFromMotion(0,
+	// 	position,rotation,linear_velocity,angular_velocity,position_prev,rotation_prev);
 	//#1 push recovery
 	// mKinCharacter->samplePoseFromMotion(0,
-	// 	position,rotation,linear_velocity,angular_velocity,position_prev,rotation_prev,7);
-
+	// 	position,rotation,linear_velocity,angular_velocity,position_prev,rotation_prev,42);
+	mKinCharacter->samplePoseFromMotion(0,
+		position,rotation,linear_velocity,angular_velocity,position_prev,rotation_prev,1);
 	Eigen::VectorXd p,v,p_prev;
 
 	mSimCharacter->computeSimPoseAndVel(position,rotation,linear_velocity,angular_velocity,p,v);
@@ -175,13 +210,38 @@ reset()
 	// mForceIdleTime= 600;
 	mForceTargetPosition.setZero();
 
-	mObstacleCount = 61;
-	mObstacleDuration = 60;
+	mObstacleCount = 0;
+	mObstacleDuration = 99999;
 	mContactObstacle = false;
 	mObstacleBodyNode = nullptr;
+
+
+	mCreateObstacle = true;
+	mToggleCount = 0;
+	mToggleDuration = dart::math::Random::uniform<int>(30, 90);
+	if(dart::math::Random::uniform<double>(0.0,1.0)<0.7)
+		mSimCharacter->toggleLight();
+	// if(dart::math::Random::uniform<double>(0.0, 1.0)<0.5)
+	// 	mCreateObstacle = true;
+	// else
+	// 	mCreateObstacle = false;
+
+	// // mCreateObstacle = true;
+	// if(mCreateObstacle == false)
+	// {
+		
+	
+	// }
+	
+	
 	mObstacleForce = Eigen::Vector3d::Zero();
 	this->updateForceTargetPosition();
-	this->updateObstacle();
+	if(mObstacle!=nullptr){
+		mWorld->removeSkeleton(mObstacle);
+		mObstacle=nullptr;
+	}
+	if(mCreateObstacle)
+		this->updateObstacle();
 	this->recordState();
 }
 void
@@ -192,11 +252,19 @@ step(const Eigen::VectorXd& action)
 	int num_sub_steps = mSimulationHz/mControlHz;
 
 	bool train = false;
-	double r = dart::math::Random::uniform<double>(0.0, 1.0);
-	if(r<0.02)
+
+
+	if(mToggleCount>mToggleDuration)
 	{
 		mSimCharacter->toggleLight();
+		mToggleDuration = dart::math::Random::uniform<int>(60, 150);
+		mToggleCount = 0;
+
 	}
+	
+	if(mSimCharacter->getLight()== 0 && mToggleCount ==30)
+		forceCreateObstacle();
+	mToggleCount++;
 	//#1
 	if(train)
 	{
@@ -232,6 +300,7 @@ step(const Eigen::VectorXd& action)
 	// }
 	if(mContactObstacle)
 		mSimCharacter->addExternalForce(mObstacleBodyNode, Eigen::Vector3d::Zero(), mObstacleForce);
+	// if(mCreateObstacle)
 	this->updateObstacle();
 	mSimCharacter->step();
 
@@ -344,7 +413,7 @@ getStateAMPExperts()
 	std::vector<Eigen::VectorXd> state_expert;
 	Eigen::VectorXd u = Eigen::VectorXd::Zero(mSimCharacter->getSkeleton()->getNumDofs());
 	int count = 0;
-	int importance = 1;
+	// int importance = 1;
 	
 	for(auto motion : mKinCharacter->getMotions()){
 
@@ -360,16 +429,18 @@ getStateAMPExperts()
 			state_amp.emplace_back(s);
 		}
 		int n = state_amp[0].rows();
-		Eigen::VectorXd s_idx;
-		if(count == 0)
-			s_idx  = Eigen::VectorXd::Zero(importance);
-		else
-			s_idx  = Eigen::VectorXd::Ones(importance);
+		// Eigen::VectorXd s_idx;
+		// if(count == 0)
+		// 	s_idx  = Eigen::VectorXd::Zero(importance);
+		// else
+		// 	s_idx  = Eigen::VectorXd::Ones(importance);
 		
 		for(int i=0;i<state_amp.size()-1;i++)
 		{
-			Eigen::VectorXd ss1(n*2 + importance);
-			ss1<<state_amp[i], state_amp[i+1], s_idx;
+			// Eigen::VectorXd ss1(n*2 + importance);
+			Eigen::VectorXd ss1(n*2);
+			// ss1<<state_amp[i], state_amp[i+1], s_idx;
+			ss1<<state_amp[i], state_amp[i+1];
 			state_expert.emplace_back(ss1);
 		}
 		count++;
@@ -418,7 +489,12 @@ recordState()
 	if(target_com_vel_local.norm()>0.2)
 	{
 		double vel = (target_com_vel_local - MathUtils::projectOnVector(com_vel_local, target_com_vel_local)).norm();
-		mRewardPosition = std::exp(-1.5*vel*vel);
+		double projection = com_vel_local.dot(target_com_vel_local)/target_com_vel_local.dot(target_com_vel_local);
+		projection = std::min(1.0,projection);
+		double vel_diff = 1.0 - projection;
+		mRewardPosition = std::exp(-2.0*vel_diff*vel_diff);
+
+
 		// mRewardPosition = std::exp(-1.5*vel*vel)*std::exp(-0.2*angvel);
 		// std::cout<<"1"<<" "<<mRewardPosition<<std::endl;
 	}
@@ -431,27 +507,30 @@ recordState()
 		// std::cout<<"2"<<" "<<mRewardPosition<<std::endl;
 	}
 	
-
+	// mRewardPosition = 2.0*mRewardPosition - 1.0;
 	Eigen::VectorXd s = mSimCharacter->getStateAMP(mPrevPositions,
 												mPrevPositions2);
 	Eigen::VectorXd s1 = mSimCharacter->getStateAMP(mSimCharacter->getPositions(),
 													mPrevPositions);
 	int importance = 1;
-	int balance = mSimCharacter->getCurrentBalanceType();
-
-	if(balance <2)
-	{
-		mRewardPosition = 1.0;
-		Eigen::VectorXd s_idx = Eigen::VectorXd::Zero(importance);
-		mStateAMP.resize(s.rows() + s1.rows() + s_idx.rows());
-		mStateAMP<<s,s1,s_idx;
-	}
-	else
-	{
-		Eigen::VectorXd s_idx = Eigen::VectorXd::Ones(importance);
-		mStateAMP.resize(s.rows() + s1.rows() + s_idx.rows());
-		mStateAMP<<s,s1,s_idx;
-	}
+	mStateAMP.resize(s.rows() + s1.rows());
+	mStateAMP<<s,s1;
+	// std::cout<<mRewardPosition<<std::endl;
+	// int balance = mSimCharacter->getCurrentBalanceType();
+	// if(balance <2)
+	// {
+	// 	mRewardPosition = 1.0;
+	// 	Eigen::VectorXd s_idx = Eigen::VectorXd::Zero(importance);
+	// 	mStateAMP.resize(s.rows() + s1.rows() + s_idx.rows());
+	// 	mStateAMP<<s,s1,s_idx;
+	// }
+	// else
+	// {
+	// 	Eigen::VectorXd s_idx = Eigen::VectorXd::Ones(importance);
+	// 	mStateAMP.resize(s.rows() + s1.rows() + s_idx.rows());
+	// 	mStateAMP<<s,s1,s_idx;
+	// }
+	// std::cout<<balance<<std::endl;
 	
 }
 Eigen::VectorXd
@@ -501,11 +580,13 @@ updateObstacle()
 	mObstacleCount++;
 	if(mObstacleCount<mObstacleDuration)
 		return;
-	if(mObstacle!=nullptr)
+	if(mObstacle!=nullptr){
 		mWorld->removeSkeleton(mObstacle);
+		mObstacle=nullptr;
+	}
 	
 	Eigen::Vector3d size = Eigen::Vector3d::Constant(0.15) + 0.05*Eigen::Vector3d::Random();
-	mObstacle = DARTUtils::createBox(2000.0, size);
+	mObstacle = DARTUtils::createBox(1000.0, size);
 
 	Eigen::Vector3d com = mSimCharacter->getSkeleton()->getBodyNode("Spine1")->getCOM();
 	double r = 2.0;
@@ -518,6 +599,7 @@ updateObstacle()
 
 	Eigen::VectorXd pos=Eigen::VectorXd::Zero(6);
 	Eigen::VectorXd vel=Eigen::VectorXd::Zero(6);
+
 	linvel[1] += 1.5;
 	pos.tail<3>() = com;
 	vel.tail<3>() = linvel;
@@ -526,13 +608,16 @@ updateObstacle()
 
 	mWorld->addSkeleton(mObstacle);
 	mObstacleCount = 0;
+	// mObstacleDuration = 300;
+	mObstacleDuration = 1e6;
+
 	// mObstacleDuration = 3000;
-	double v = dart::math::Random::uniform<double>(0.0, 1.0);
-	if(v<0.5)
-		mObstacleDuration = 60;
-	else{
-		mObstacleDuration = 300;
-		vel.setZero();
-		mObstacle->setVelocities(vel);
-	}
+	// double v = dart::math::Random::uniform<double>(0.0, 1.0);
+	// if(v<0.5)
+		
+	// else{
+	// 	mObstacleDuration = 300;
+	// 	vel.setZero();
+	// 	mObstacle->setVelocities(vel);
+	// }
 }

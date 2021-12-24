@@ -339,8 +339,8 @@ step()
 	if(mFocus)
 	{
 		Eigen::Vector3d com = mEnvironment->getSimCharacter()->getSkeleton()->getBodyNode(0)->getCOM();	
-		mCamera->setLookAt(com);
-		mCamera->setEye( com + Eigen::Vector3d(3.0,0.0,0.0));
+		// mCamera->setLookAt(com);
+		// mCamera->setEye( com + Eigen::Vector3d(3.0,0.0,0.0));
 	}
 	
 	
@@ -372,6 +372,7 @@ keyboard(unsigned char key, int x, int y)
 		case '7':d_hat = Eigen::Vector3d::Constant(1e-3);break;
 		case '8':d_hat *= 0.5;break;
 		case '9':d_hat *= 2.0;break;
+		case 'z':mEnvironment->getSimCharacter()->toggleLight();break;
 
 		case ' ':mPlay = !mPlay; break;
 		default:GLUTWindow3D::keyboard(key,x,y);break;
@@ -545,4 +546,42 @@ capture_screen()
 	} else {
 		std::cout << "wrote screenshot " << file_name << "\n";
 	}
+}
+void
+Window::
+save_pose()
+{
+	// static std::string path = timepoint_to_string(std::chrono::system_clock::now(), "../data/png/%Y_%m_%d:%H_%M_%S");
+	// if(count == 0){
+	// 	std::string command = "mkdir " + path;
+	// 	system(command.c_str());	
+	// }
+	
+	
+	// char file_name[256];
+	// std::string file_base = "Capture";
+
+	// std::snprintf(file_name, sizeof(file_name), "%s%s%s%.4d.png",
+	// 			path.c_str(), "/", file_base.c_str(), count++);
+
+	// int tw = glutGet(GLUT_WINDOW_WIDTH);
+	// int th = glutGet(GLUT_WINDOW_HEIGHT);
+
+	// glReadPixels(0, 0,  tw, th, GL_RGBA, GL_UNSIGNED_BYTE, &mScreenshotTemp[0]);
+
+	// // reverse temp2 temp1
+	// for (int row = 0; row < th; row++) {
+	// memcpy(&mScreenshotTemp2[row * tw * 4],
+	// 	   &mScreenshotTemp[(th - row - 1) * tw * 4], tw * 4);
+	// }
+	
+	// unsigned result = lodepng::encode(file_name, mScreenshotTemp2, tw, th);
+
+	// // if there's an error, display it
+	// if (result) {
+	// std::cout << "lodepng error " << result << ": "
+	// 		<< lodepng_error_text(result) << std::endl;
+	// } else {
+	// 	std::cout << "wrote screenshot " << file_name << "\n";
+	// }
 }

@@ -38,6 +38,7 @@ protected:
 	std::vector<unsigned char> mScreenshotTemp2;
 	bool mCapture;
 	void capture_screen();
+	void save_pose();
 
 	bool mPlay;
 	

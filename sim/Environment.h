@@ -49,7 +49,7 @@ public:
 	const Eigen::Vector3d& getAppliedForce(){return mForceTargetPosition;}
 
 	void updateObstacle();
-	void forceCreateObstacle(){mObstacleCount = 9999;}
+	void forceCreateObstacle(){mObstacleCount = 999999;}
 
 	dart::dynamics::SkeletonPtr getObstacle(){return mObstacle;}
 private:
@@ -94,7 +94,8 @@ private:
 	bool mTask;
 	Eigen::VectorXd mStateTask;
 
-
+	int mToggleCount, mToggleDuration;
+	bool mCreateObstacle;
 
 	
 	// double mdTheta;

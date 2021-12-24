@@ -63,6 +63,7 @@ reset(const Eigen::VectorXd& p, const Eigen::VectorXd& v)
 
 	mCurrentBalanceType = 0;
 	mAppliedForce = false;
+	mTargetSpeed = 1.0;
 	this->clearCummulatedForces();
 }
 void
@@ -323,6 +324,7 @@ addExternalForce(dart::dynamics::BodyNode* bn,
 	else
 	{
 		mdHat = Eigen::Vector3d::Constant(0.7);
+		// mdHat = Eigen::Vector3d::Constant(1.3);
 
 		int n = mSkeleton->getNumDofs();
 
@@ -331,7 +333,7 @@ addExternalForce(dart::dynamics::BodyNode* bn,
 		mdU = h*J.transpose()*mdHat.cwiseProduct(force);
 
 
-		double root_inv_mass = 0.1;
+		double root_inv_mass = 0.2;
 		mdUroot = h*root_inv_mass*mRootdHat.cwiseProduct(force);
 	}
 	// Eigen::MatrixXd kp_inv = mKp.cwiseInverse().asDiagonal();
@@ -572,13 +574,14 @@ step()
 			Eigen::Vector3d u = mUroot;
 			Eigen::Vector3d fn = -k*(u);
 			if(mLight == 1)
-				fn = fn + k*1.4*Eigen::Vector3d::UnitZ();
+				fn = fn + k*mTargetSpeed*Eigen::Vector3d::UnitZ();
 			Eigen::Vector3d b1 =  h*fn + h*k*u;
 			Eigen::Vector3d b2 = u;
 			double denom = 1.0/(m + h*d + h*h*k);
 
 			mUroot = denom*(h*b1+(m+h*d)*b2);
 			mdUroot = denom*(b1 + h*k*b2);
+
 		}
 
 

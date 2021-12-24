@@ -72,7 +72,9 @@ public:
 
 	int getBalanceType(const Eigen::VectorXd& force);
 	int getCurrentBalanceType(){return mCurrentBalanceType;}
-	void toggleLight(){mLight = 1 - mLight;}
+	int getLight(){return mLight;}
+	void toggleLight(){mLight = 1 - mLight;mTargetSpeed = 1.0;
+						if(dart::math::Random::uniform<double>(0.0,1.0)<0.7)mTargetSpeed = 2.5;}
 private:
 	dart::dynamics::SkeletonPtr mSkeleton;
 	std::vector<dart::dynamics::BodyNode*> mEndEffectors;
@@ -98,6 +100,7 @@ private:
 	std::vector<Eigen::VectorXd> mBoundaries;
 	int mCurrentBalanceType;
 	int mLight;
+	double mTargetSpeed;
 };
 
 #endif
