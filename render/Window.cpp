@@ -115,25 +115,25 @@ GLfloat fogColor[] = {1,1,1,1};
 	// glColor4f(0.4,0.4,1.2,0.8);DrawUtils::drawArrow3D(Eigen::Vector3d::Zero(), Eigen::Vector3d::UnitZ(), 0.2);
 	DARTRendering::drawSkeleton(mEnvironment->getSimCharacter()->getSkeleton(),mSimRenderOption);
 	int n = mEnvironment->getSimCharacter()->getSkeleton()->getNumDofs();
-	// if(mRenderTargetPosition)
-	// {
-	// 	mEnvironment->getSimCharacter()->pushState();
-	// 	Eigen::VectorXd pu = mEnvironment->getSimCharacter()->getPositions();
-	// 	// Eigen::VectorXd p =mEnvironment->getSimCharacter()->computeOriginalPositions(pu);
-	// 	Eigen::VectorXd p = mEnvironment->getSimCharacter()->computeDisplacedPositions(pu);
-	// 	// Eigen::VectorXd p = pu.tail(n);
-	// 	// // p[5] += 2.0;
-	// 	// // p[4] += 1.0;
+	if(mRenderTargetPosition)
+	{
+		mEnvironment->getSimCharacter()->pushState();
+		Eigen::VectorXd pu = mEnvironment->getSimCharacter()->getPositions();
+		// Eigen::VectorXd p =mEnvironment->getSimCharacter()->computeOriginalPositions(pu);
+		Eigen::VectorXd p = mEnvironment->getSimCharacter()->computeDisplacedPositions(pu);
+		// Eigen::VectorXd p = pu.tail(n);
+		// // p[5] += 2.0;
+		// // p[4] += 1.0;
 
-	// 	// p.head<6>().setZero();
-	// 	p[5] += 2.0;
-	// 	// p[5] += 1.0;
+		// p.head<6>().setZero();
+		p[5] += 2.0;
+		// p[5] += 1.0;
 		
-	// 	mEnvironment->getSimCharacter()->getSkeleton()->setPositions(p);
+		mEnvironment->getSimCharacter()->getSkeleton()->setPositions(p);
 
-	// 	DARTRendering::drawSkeleton(mEnvironment->getSimCharacter()->getSkeleton(),mKinRenderOption);
-	// 	mEnvironment->getSimCharacter()->popState();
-	// }
+		DARTRendering::drawSkeleton(mEnvironment->getSimCharacter()->getSkeleton(),mKinRenderOption);
+		mEnvironment->getSimCharacter()->popState();
+	}
 	
 	DARTRendering::drawObstacle(mEnvironment->getObstacle(),mKinRenderOption);
 	// {

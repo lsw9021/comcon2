@@ -211,6 +211,7 @@ reset()
 	mForceTargetPosition.setZero();
 
 	mObstacleCount = 0;
+	mObstacleCount = 1e6;
 	mObstacleDuration = 99999;
 	mContactObstacle = false;
 	mObstacleBodyNode = nullptr;
@@ -586,7 +587,7 @@ updateObstacle()
 	}
 	
 	Eigen::Vector3d size = Eigen::Vector3d::Constant(0.15) + 0.05*Eigen::Vector3d::Random();
-	mObstacle = DARTUtils::createBox(1000.0, size);
+	mObstacle = DARTUtils::createBox(2000.0, size);
 
 	Eigen::Vector3d com = mSimCharacter->getSkeleton()->getBodyNode("Spine1")->getCOM();
 	double r = 2.0;
@@ -609,7 +610,8 @@ updateObstacle()
 	mWorld->addSkeleton(mObstacle);
 	mObstacleCount = 0;
 	// mObstacleDuration = 300;
-	mObstacleDuration = 1e6;
+	// mObstacleDuration = 1e6;
+	mObstacleDuration = dart::math::Random::uniform<int>(60,90);
 
 	// mObstacleDuration = 3000;
 	// double v = dart::math::Random::uniform<double>(0.0, 1.0);
