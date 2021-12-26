@@ -165,12 +165,14 @@ GLfloat fogColor[] = {1,1,1,1};
 	// }
 	
 	DARTRendering::drawObstacle(mEnvironment->getObstacle(),mKinRenderOption);
-	// {
-	// 	Eigen::Vector3d end = 0.1*mEnvironment->getForceTargetPosition();
-	// 	Eigen::Vector3d start = mEnvironment->getTargetBodyNode()->getTransform().translation();
-	// 	glColor4f(1,0,0,1);
-	// 	DrawUtils::drawArrow3D(start, start + end, 0.1);
-	// }
+
+	{
+		auto simchar = mEnvironment->getSimCharacter();
+		Eigen::Vector3d dir = simchar->getSkeleton()->getBodyNode(0)->getTransform().linear().col(1);
+		Eigen::Vector3d start = simchar->getSkeleton()->getBodyNode(0)->getTransform().translation();
+		glColor4f(1,0,0,1);
+		DrawUtils::drawArrow3D(start, start + dir, 0.1);
+	}
 	
 	{
 		Eigen::Vector3d end = mEnvironment->getSimCharacter()->getUroot();

@@ -359,8 +359,8 @@ step(const Eigen::VectorXd& action)
 
 	// mSimCharacter->step()
 	mSimCharacter->clearCummulatedForces();
-	bool contactRF = true;
-	bool contactLF = true;
+	bool contactRF = false;
+	bool contactLF = false;
 	mContactObstacle = false;
 	mObstacleForce = Eigen::Vector3d::Zero();
 	for(int i=0;i<num_sub_steps;i++)
@@ -442,10 +442,28 @@ step(const Eigen::VectorXd& action)
 	// std::cout<<theta<<std::endl;
 	// if(mSimCharacter->getSkeleton()->getBodyNode(0)->getCOM()[1]<0.75)
 	// 	mContactEOE = true;
-	if(theta>1.0)
+	theta = theta*180.0/M_PI;
+
+	Eigen::Vector3d bos;
+	if(contactRF && contactLF)
+		bos = 0.5*(mSimCharacter->getSkeleton()->getBodyNode("LeftFoot")->getCOM() + mSimCharacter->getSkeleton()->getBodyNode("RightFoot")->getCOM());
+	else if(contactRF)
+		bos =  mSimCharacter->getSkeleton()->getBodyNode("RightFoot")->getCOM();
+	else if(contactLF)
+		bos =  mSimCharacter->getSkeleton()->getBodyNode("LeftFoot")->getCOM();
+	else
+		bos = 0.5*(mSimCharacter->getSkeleton()->getBodyNode("LeftFoot")->getCOM() + mSimCharacter->getSkeleton()->getBodyNode("RightFoot")->getCOM());
+
+	Eigen::Vector3d com = mSimCharacter->getSkeleton()->getBodyNode(0)->getCOM();
+	bos[1] = 0.0;
+	com[1] = 0.0;
+	std::cout<<(com-bos).norm()<<std::endl;
+	if(theta>45.0)
 		mContactEOE = true;
-	if(contactRF ==false && contactLF == false && mFrame > 30)
+	if((com-bos).norm()>0.45)
 		mContactEOE = true;
+	// if(contactRF ==false && contactLF == false && mFrame > 30)
+	// 	mContactEOE = true;
 	this->recordState();
 	mPrevPositions2 = mPrevPositions;
 	mPrevPositions = mSimCharacter->getPositions();
