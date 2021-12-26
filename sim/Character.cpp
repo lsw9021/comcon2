@@ -274,7 +274,7 @@ addExternalForce(dart::dynamics::BodyNode* bn,
 	mBodyNodeName = bn->getName();
 	mForce[1] = 0.0;
 	mCurrentBalanceType = this->getBalanceType(mForce);
-	mLight = 0;
+	// mLight = 0;
 	// if(0)
 	if(mCurrentBalanceType == 0)
 	{
@@ -333,7 +333,7 @@ addExternalForce(dart::dynamics::BodyNode* bn,
 		mdU = h*J.transpose()*mdHat.cwiseProduct(force);
 
 
-		double root_inv_mass = 0.2;
+		double root_inv_mass = 0.1;
 		mdUroot = h*root_inv_mass*mRootdHat.cwiseProduct(force);
 	}
 	// Eigen::MatrixXd kp_inv = mKp.cwiseInverse().asDiagonal();
@@ -573,8 +573,8 @@ step()
 
 			Eigen::Vector3d u = mUroot;
 			Eigen::Vector3d fn = -k*(u);
-			// if(mLight == 1)
-			// 	fn = fn + k*mTargetSpeed*Eigen::Vector3d::UnitZ();
+			if(mLight == 1)
+				fn = fn + k*mTargetSpeed*Eigen::Vector3d::UnitZ();
 			Eigen::Vector3d b1 =  h*fn + h*k*u;
 			Eigen::Vector3d b2 = u;
 			double denom = 1.0/(m + h*d + h*h*k);

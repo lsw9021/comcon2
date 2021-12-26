@@ -41,6 +41,7 @@ Environment()
 	std::string locofile_mirror7 = std::string(ROOT_DIR)+"/data/bvh/LocomotionFlat07_000_mirror.bvh";
 	std::string locofile_mirror8 = std::string(ROOT_DIR)+"/data/bvh/LocomotionFlat08_000_mirror.bvh";
 
+
 	auto kinskel = kin::Skeleton::create(base_bvh_file);
 	mKinCharacter = new kin::Character(kinskel);
 	
@@ -61,6 +62,7 @@ Environment()
 
 	// mKinCharacter->addMotion(locofile2, 60, 300);
 	mKinCharacter->addMotion(base_bvh_file, 82, 85);
+	mKinCharacter->addMotion(base_bvh_file, "0:24:04 1:47:23");
 	//walk
 	mKinCharacter->addMotion(locofile6, 1500, 1950);
 	mKinCharacter->addMotion(locofile_mirror6, 1500, 1950);
@@ -263,8 +265,8 @@ step(const Eigen::VectorXd& action)
 
 	}
 	
-	if(mSimCharacter->getLight()== 0 && mToggleCount ==30)
-		forceCreateObstacle();
+	// if(mSimCharacter->getLight()== 0 && mToggleCount ==30)
+	// 	forceCreateObstacle();
 	mToggleCount++;
 	//#1
 	if(train)
@@ -611,6 +613,8 @@ updateObstacle()
 	mObstacleCount = 0;
 	// mObstacleDuration = 300;
 	// mObstacleDuration = 1e6;
+	// mObstacleDuration = dart::math::Random::uniform<int>(60,90);
+	// mObstacleDuration = 300;
 	mObstacleDuration = dart::math::Random::uniform<int>(60,90);
 
 	// mObstacleDuration = 3000;
