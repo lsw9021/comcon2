@@ -56,6 +56,7 @@ public:
 	kin::Character* getKinCharacter(){return mKinCharacter;}
 	kin::Character* getKinCharacter2(){return mKinCharacter2;}
 	int getKinFrame(){return mKinFrame;}
+	const Eigen::Vector3d& getConstraintForce(){return mConstraintForce;}
 private:
 	void recordState();
 
@@ -106,6 +107,7 @@ private:
 	std::vector<Eigen::Vector6d> mKinCharacterHandPositions;
 	std::vector<Eigen::Vector6d> mKinCharacterHandVelocities;
 	dart::constraint::BallJointConstraintPtr mWeldConstraint;
+	Eigen::Vector3d mConstraintForce;
 	int mKinFrame;
 
 	// double mdTheta;

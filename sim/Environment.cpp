@@ -213,7 +213,7 @@ reset()
 	// mKinCharacter->samplePoseFromMotion(0,
 	// 	position,rotation,linear_velocity,angular_velocity,position_prev,rotation_prev,42);
 	mKinFrame = mKinCharacter2->getMotion(0)->getNumFrames()-mMaxFrame-10;
-	mKinFrame = dart::math::Random::uniform<int>(1, mKinFrame);
+	mKinFrame = dart::math::Random::uniform<int>(1+30, mKinFrame);
 	mKinCharacter->samplePoseFromMotion(0,
 		position,rotation,linear_velocity,angular_velocity,position_prev,rotation_prev, 1);
 	Eigen::VectorXd p,v,p_prev;
@@ -271,6 +271,7 @@ reset()
 	mCreateObstacle = true;
 	mToggleCount = 0;
 	mToggleDuration = dart::math::Random::uniform<int>(30, 90);
+	mConstraintForce.setZero();
 	// if(dart::math::Random::uniform<double>(0.0,1.0)<0.7)
 	// 	mSimCharacter->toggleLight();
 	// if(dart::math::Random::uniform<double>(0.0, 1.0)<0.5)
@@ -354,7 +355,7 @@ step(const Eigen::VectorXd& action)
 	if(mContactObstacle)
 		mSimCharacter->addExternalForce(mObstacleBodyNode, Eigen::Vector3d::Zero(), mObstacleForce);
 	// if(mCreateObstacle)
-	this->updateObstacle();
+	// this->updateObstacle();
 	mSimCharacter->step();
 
 	// mSimCharacter->step()
@@ -363,6 +364,7 @@ step(const Eigen::VectorXd& action)
 	bool contactLF = false;
 	mContactObstacle = false;
 	mObstacleForce = Eigen::Vector3d::Zero();
+	mConstraintForce.setZero();
 	for(int i=0;i<num_sub_steps;i++)
 	{
 		mSimCharacter->actuate(action);
@@ -377,13 +379,24 @@ step(const Eigen::VectorXd& action)
 		}
 		Eigen::VectorXd obs_pos = Eigen::VectorXd::Zero(6);
 		Eigen::VectorXd obs_vel = Eigen::VectorXd::Zero(6);
+
 		obs_pos = mKinCharacterHandPositions[mKinFrame];
 		obs_vel = mKinCharacterHandVelocities[mKinFrame];
+		// if(mFrame<30){
+		// 	obs_pos = mKinCharacterHandPositions[mKinFrame-mFrame];
+		// 	obs_vel = mKinCharacterHandVelocities[mKinFrame-mFrame];
+		// }
+		// else
+		// {
+		// 	obs_pos = mKinCharacterHandPositions[mKinFrame-30];
+		// 	obs_vel = mKinCharacterHandVelocities[mKinFrame-30];
+		// }
 
 		mObstacle->setPositions(obs_pos);
 		mObstacle->setVelocities(obs_vel);
 
 		mWorld->step();
+		mConstraintForce += (mSimCharacter->getSkeleton()->getBodyNode("LeftHand")->getConstraintImpulse()*mSimulationHz).tail<3>();
 		// Check EOE
 		
 		
