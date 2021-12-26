@@ -108,6 +108,7 @@ private:
 	std::vector<Eigen::Vector6d> mKinCharacterHandVelocities;
 	dart::constraint::BallJointConstraintPtr mWeldConstraint;
 	Eigen::Vector3d mConstraintForce;
+	double mHandDiffY;
 	int mKinFrame;
 
 	// double mdTheta;

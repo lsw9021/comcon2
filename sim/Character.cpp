@@ -267,7 +267,7 @@ addExternalForce(dart::dynamics::BodyNode* bn,
 				const Eigen::Vector3d& offset,
 				const Eigen::Vector3d& force)
 {
-	double h = 1.0/30.0;
+	double h = 1.0/450.0;
 	mAppliedForce = true;
 	mOffset = offset;
 	mForce = force;
@@ -323,7 +323,7 @@ addExternalForce(dart::dynamics::BodyNode* bn,
 	}
 	else
 	{
-		mdHat = Eigen::Vector3d::Constant(0.7);
+		mdHat = Eigen::Vector3d::Constant(1.0);
 		// mdHat = Eigen::Vector3d::Constant(1.3);
 
 		int n = mSkeleton->getNumDofs();
@@ -544,7 +544,7 @@ void
 Character::
 step()
 {
-	double h = 1.0/30.0;
+	double h = 1.0/450.0;
 	if(mAppliedForce == false)
 	{
 		mdU.setZero();

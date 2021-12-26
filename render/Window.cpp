@@ -144,35 +144,37 @@ GLfloat fogColor[] = {1,1,1,1};
 	// 	mEnvironment->getSimCharacter()->popState();
 	// }
 		
-	// if(mRenderTargetPosition)
-	// {
-	// 	mEnvironment->getSimCharacter()->pushState();
-	// 	Eigen::VectorXd pu = mEnvironment->getSimCharacter()->getPositions();
-	// 	// Eigen::VectorXd p =mEnvironment->getSimCharacter()->computeOriginalPositions(pu);
-	// 	Eigen::VectorXd p = mEnvironment->getSimCharacter()->computeDisplacedPositions(pu);
-	// 	// Eigen::VectorXd p = pu.tail(n);
-	// 	// // p[5] += 2.0;
-	// 	// // p[4] += 1.0;
+	if(mRenderTargetPosition)
+	{
+		mEnvironment->getSimCharacter()->pushState();
+		Eigen::VectorXd pu = mEnvironment->getSimCharacter()->getPositions();
+		// Eigen::VectorXd p =mEnvironment->getSimCharacter()->computeOriginalPositions(pu);
+		// pu.tail(n-6) = Eigen::VectorXd::Zero(n-6);
+		// Eigen::VectorXd p = mEnvironment->getSimCharacter()->computeDisplacedPositions(pu);
 
-	// 	// p.head<6>().setZero();
-	// 	p[5] += 2.0;
-	// 	// p[5] += 1.0;
+		Eigen::VectorXd p = pu.tail(n);
+		// // p[5] += 2.0;
+		// // p[4] += 1.0;
+
+		// p.head<6>().setZero();
+		// p[5] += 2.0;
+		// p[5] += 1.0;
 		
-	// 	mEnvironment->getSimCharacter()->getSkeleton()->setPositions(p);
+		mEnvironment->getSimCharacter()->getSkeleton()->setPositions(p);
 
-	// 	DARTRendering::drawSkeleton(mEnvironment->getSimCharacter()->getSkeleton(),mKinRenderOption);
-	// 	mEnvironment->getSimCharacter()->popState();
-	// }
+		DARTRendering::drawSkeleton(mEnvironment->getSimCharacter()->getSkeleton(),mKinRenderOption);
+		mEnvironment->getSimCharacter()->popState();
+	}
 	
 	DARTRendering::drawObstacle(mEnvironment->getObstacle(),mKinRenderOption);
 
-	{
-		auto simchar = mEnvironment->getSimCharacter();
-		Eigen::Vector3d dir = mEnvironment->getConstraintForce();
-		Eigen::Vector3d start = simchar->getSkeleton()->getBodyNode("LeftHand")->getTransform().translation();
-		glColor4f(1,0,0,1);
-		DrawUtils::drawArrow3D(start, start + dir, 0.1);
-	}
+	// {
+	// 	auto simchar = mEnvironment->getSimCharacter();
+	// 	Eigen::Vector3d dir = mEnvironment->getConstraintForce();
+	// 	Eigen::Vector3d start = simchar->getSkeleton()->getBodyNode("LeftHand")->getTransform().translation();
+	// 	glColor4f(1,0,0,1);
+	// 	DrawUtils::drawArrow3D(start, start + dir*0.01, 0.1);
+	// }
 	
 	{
 		Eigen::Vector3d end = mEnvironment->getSimCharacter()->getUroot();

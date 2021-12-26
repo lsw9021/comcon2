@@ -213,7 +213,8 @@ reset()
 	// mKinCharacter->samplePoseFromMotion(0,
 	// 	position,rotation,linear_velocity,angular_velocity,position_prev,rotation_prev,42);
 	mKinFrame = mKinCharacter2->getMotion(0)->getNumFrames()-mMaxFrame-10;
-	mKinFrame = dart::math::Random::uniform<int>(1+30, mKinFrame);
+	// mKinFrame = dart::math::Random::uniform<int>(1+30, mKinFrame);
+	mKinFrame = 30;
 	mKinCharacter->samplePoseFromMotion(0,
 		position,rotation,linear_velocity,angular_velocity,position_prev,rotation_prev, 1);
 	Eigen::VectorXd p,v,p_prev;
@@ -224,6 +225,7 @@ reset()
 		mSimCharacter->getSkeleton()->setPositions(p);
 
 		Eigen::Vector3d diff = mKinCharacterHandPositions[mKinFrame].tail<3>()-mSimCharacter->getSkeleton()->getBodyNode("LeftHand")->getCOM();
+		mHandDiffY = -diff[1];
 		diff[1] =0.0;
 		position += diff;
 		position_prev += diff;
@@ -352,11 +354,12 @@ step(const Eigen::VectorXd& action)
 		
 
 	// }
-	if(mContactObstacle)
-		mSimCharacter->addExternalForce(mObstacleBodyNode, Eigen::Vector3d::Zero(), mObstacleForce);
+	// if(mContactObstacle)
+	// 	mSimCharacter->addExternalForce(mObstacleBodyNode, Eigen::Vector3d::Zero(), mObstacleForce);
 	// if(mCreateObstacle)
 	// this->updateObstacle();
-	mSimCharacter->step();
+
+	
 
 	// mSimCharacter->step()
 	mSimCharacter->clearCummulatedForces();
@@ -382,6 +385,7 @@ step(const Eigen::VectorXd& action)
 
 		obs_pos = mKinCharacterHandPositions[mKinFrame];
 		obs_vel = mKinCharacterHandVelocities[mKinFrame];
+		obs_pos[4] += mHandDiffY*std::max(0.0,1.0-(double)mFrame/30.0);
 		// if(mFrame<30){
 		// 	obs_pos = mKinCharacterHandPositions[mKinFrame-mFrame];
 		// 	obs_vel = mKinCharacterHandVelocities[mKinFrame-mFrame];
@@ -395,8 +399,12 @@ step(const Eigen::VectorXd& action)
 		mObstacle->setPositions(obs_pos);
 		mObstacle->setVelocities(obs_vel);
 
+		
 		mWorld->step();
-		mConstraintForce += (mSimCharacter->getSkeleton()->getBodyNode("LeftHand")->getConstraintImpulse()*mSimulationHz).tail<3>();
+		Eigen::Vector3d fc = (mSimCharacter->getSkeleton()->getBodyNode("LeftHand")->getConstraintImpulse()*mSimulationHz).tail<3>();
+		mSimCharacter->addExternalForce(mSimCharacter->getSkeleton()->getBodyNode("LeftHand"), Eigen::Vector3d::Zero(), fc);
+		mSimCharacter->step();
+		mConstraintForce += fc;
 		// Check EOE
 		
 		
@@ -470,11 +478,10 @@ step(const Eigen::VectorXd& action)
 	Eigen::Vector3d com = mSimCharacter->getSkeleton()->getBodyNode(0)->getCOM();
 	bos[1] = 0.0;
 	com[1] = 0.0;
-	std::cout<<(com-bos).norm()<<std::endl;
 	if(theta>45.0)
 		mContactEOE = true;
-	if((com-bos).norm()>0.45)
-		mContactEOE = true;
+	// if((com-bos).norm()>0.45)
+	// 	mContactEOE = true;
 	// if(contactRF ==false && contactLF == false && mFrame > 30)
 	// 	mContactEOE = true;
 	this->recordState();
