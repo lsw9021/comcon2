@@ -97,6 +97,8 @@ private:
 	int mToggleCount, mToggleDuration;
 	bool mCreateObstacle;
 
+	dart::constraint::WeldJointConstraintPtr mWeldConstraint;
+
 	
 	// double mdTheta;
 	// Eigen::VectorXd mForceFunction;

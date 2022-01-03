@@ -61,9 +61,10 @@ reset(const Eigen::VectorXd& p, const Eigen::VectorXd& v)
 	mUroot = Eigen::Vector3d::Zero();
 	mdUroot = Eigen::Vector3d::Zero();
 
-	mCurrentBalanceType = 0;
+	mLight = 0;
+	mCurrentBalanceType = 2;
 	mAppliedForce = false;
-	mTargetSpeed = 1.0;
+	mTargetVelocity.setZero();
 	this->clearCummulatedForces();
 }
 void
@@ -267,7 +268,7 @@ addExternalForce(dart::dynamics::BodyNode* bn,
 				const Eigen::Vector3d& offset,
 				const Eigen::Vector3d& force)
 {
-	double h = 1.0/30.0;
+	double h = 1.0/450.0;
 	mAppliedForce = true;
 	mOffset = offset;
 	mForce = force;
@@ -333,7 +334,8 @@ addExternalForce(dart::dynamics::BodyNode* bn,
 		mdU = h*J.transpose()*mdHat.cwiseProduct(force);
 
 
-		double root_inv_mass = 0.1;
+		double root_inv_mass = 5.0;
+		// double root_inv_mass = 20.0;
 		mdUroot = h*root_inv_mass*mRootdHat.cwiseProduct(force);
 	}
 	// Eigen::MatrixXd kp_inv = mKp.cwiseInverse().asDiagonal();
@@ -544,7 +546,7 @@ void
 Character::
 step()
 {
-	double h = 1.0/30.0;
+	double h = 1.0/450.0;
 	if(mAppliedForce == false)
 	{
 		mdU.setZero();
@@ -567,14 +569,15 @@ step()
 			mdU.segment<3>(3) = denom*(b1 + h*k*b2);
 		}
 		{
-			double m = 1.0;
+			// double m = 1.0;
+			double m = 0.2;
 			double k = 120.0;
 			double d = 2.0*std::sqrt(k);
 
 			Eigen::Vector3d u = mUroot;
 			Eigen::Vector3d fn = -k*(u);
-			// if(mLight == 1)
-			// 	fn = fn + k*mTargetSpeed*Eigen::Vector3d::UnitZ();
+			if(mLight == 1)
+				fn = fn + k*mTargetVelocity;
 			Eigen::Vector3d b1 =  h*fn + h*k*u;
 			Eigen::Vector3d b2 = u;
 			double denom = 1.0/(m + h*d + h*h*k);
@@ -1006,4 +1009,13 @@ getBalanceType(const Eigen::VectorXd& force)
 		count++;
 	}
 	return count;
+}
+void
+Character::
+toggleLight()
+{
+	mLight = 1 - mLight;
+	double r = dart::math::Random::uniform<double>(1.5, 2.0);
+	double theta = dart::math::Random::uniform<double>(0.0, 2*M_PI);
+	mTargetVelocity = Eigen::Vector3d(r*std::cos(theta), 0.0, r*std::sin(theta));
 }

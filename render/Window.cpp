@@ -259,11 +259,12 @@ GLfloat fogColor[] = {1,1,1,1};
 			glColor4f(0,0,0,1.0);
 		}
 	}
-	// if(mTargetBodyNode!=nullptr)
-	// {
-	// 	Eigen::Vector3d end = mTargetPosition;
-	// 	Eigen::Vector3d start = mTargetBodyNode->getTransform()*mTargetLocalPosition;
-	// 	DrawUtils::drawArrow3D(start, end, 0.04);
+	if(mTargetBodyNode!=nullptr)
+	{
+		Eigen::Vector3d end = mTargetPosition;
+		Eigen::Vector3d start = mTargetBodyNode->getTransform()*mTargetLocalPosition;
+		DrawUtils::drawArrow3D(start, end, 0.04);
+	}
 
 	// 	Eigen::Matrix3d K = mEnvironment->getSimCharacter()->computeStiffnessMatrix(mTargetBodyNode, mTargetLocalPosition);
 
@@ -346,8 +347,8 @@ step()
 	
 
 	// Eigen::VectorXd s_amp = mEnvironment->getStateAMP();
-	// if(mEnvironment->eoe())
-	// 	this->reset();
+	if(mEnvironment->eoe())
+		this->reset();
 }
 
 void
