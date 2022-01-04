@@ -225,7 +225,8 @@ reset()
 
 	mCreateObstacle = true;
 	mToggleCount = 0;
-	mToggleDuration = dart::math::Random::uniform<int>(1, 30);
+	// mToggleDuration = dart::math::Random::uniform<int>(1, 30);
+	mToggleDuration = 90;
 	// if(dart::math::Random::uniform<double>(0.0,1.0)<0.5)
 	// 	mSimCharacter->toggleLight();
 	// if(dart::math::Random::uniform<double>(0.0, 1.0)<0.5)
