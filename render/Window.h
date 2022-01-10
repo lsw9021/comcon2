@@ -6,6 +6,7 @@
 #include <Eigen/Core>
 #include "Environment.h"
 #include "DARTRendering.h"
+#include "OBJ.h"
 
 #include <pybind11/pybind11.h>
 #include <pybind11/eigen.h>
@@ -62,6 +63,11 @@ protected:
 	double mTargetDepth;
 	std::vector<double> mDhats;
 	std::vector<std::vector<Eigen::Vector3d>> mCOMTrajectories;
+
+	OBJ* mHat;
+	OBJ* mGlasses;
+
+	Eigen::VectorXd mAction;
 };
 
 

@@ -54,7 +54,8 @@ class Discriminator(object):
 
 		d = convert_to_ndarray(d)
 		d = np.clip(d, -1.0, 1.0)
-		d = self.r_scale*(1.0 - 0.25*(d-1)*(d-1))
+		d = self.r_scale*(1.0 - 0.2*(d-1)*(d-1))
+		
 
 		return d
 

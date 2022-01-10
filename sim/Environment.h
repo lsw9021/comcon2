@@ -52,6 +52,11 @@ public:
 	void forceCreateObstacle(){mObstacleCount = 999999;}
 
 	dart::dynamics::SkeletonPtr getObstacle(){return mObstacle;}
+	dart::dynamics::SkeletonPtr getRod(){return mRod;}
+
+	const Eigen::Vector3d& getObstacleForce(){return mObstacleForce;}
+	bool isObstacleForced(){return mObstacleCount<mObstacleDuration;}
+	Eigen::Vector3d mRodRelativeTransform;
 private:
 	void recordState();
 
@@ -72,7 +77,7 @@ private:
 	Eigen::Vector3d mObstacleForce;
 	dart::dynamics::BodyNode* mObstacleBodyNode;
 
-	int mObstacleCount, mObstacleDuration;
+	int mObstacleCount, mObstacleDuration,mObstacleIdleTime;
 
 	Eigen::VectorXd mPrevPositions, mPrevPositions2;
 	Eigen::Vector3d mPrevCOM;
@@ -97,9 +102,10 @@ private:
 	int mToggleCount, mToggleDuration;
 	bool mCreateObstacle;
 
-	dart::constraint::WeldJointConstraintPtr mWeldConstraint;
+	dart::constraint::BallJointConstraintPtr mWeldConstraint;
 
-	
+	dart::dynamics::SkeletonPtr mRod;
+
 	// double mdTheta;
 	// Eigen::VectorXd mForceFunction;
 };

@@ -43,6 +43,8 @@ public:
 	void addExternalForce(dart::dynamics::BodyNode* bn,
 						const Eigen::Vector3d& offset,
 						const Eigen::Vector3d& force);
+	void addGhostForce(dart::dynamics::BodyNode* bn,
+						const Eigen::Vector6d& force);
 	void getExternalForce(std::string& bn_name, Eigen::Vector3d& offset, Eigen::Vector3d& force);
 	void step();
 

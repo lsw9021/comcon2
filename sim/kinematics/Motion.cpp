@@ -166,6 +166,7 @@ parseBVH(const std::string& file, int start, int end)
 	{
 		positions = std::vector<Eigen::Vector3d>(positions.begin() + start, positions.begin() + end);
 		rotations = std::vector<Eigen::MatrixXd>(rotations.begin() + start, rotations.begin() + end);
+		
 	}
 
 

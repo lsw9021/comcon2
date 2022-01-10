@@ -20,8 +20,8 @@ Environment()
 	std::map<std::string, std::string> bvh_map;
 	std::map<std::string, double> kp_map;
 	std::map<std::string, double> mf_map;
-	auto simskel = DARTUtils::buildFromFile(std::string(ROOT_DIR)+"/data/skel_heavy.xml",bvh_map, kp_map, mf_map);
-	// auto simskel = DARTUtils::buildFromFile(std::string(ROOT_DIR)+"/data/skel.xml",bvh_map, kp_map, mf_map);
+	// auto simskel = DARTUtils::buildFromFile(std::string(ROOT_DIR)+"/data/skel_heavy.xml",bvh_map, kp_map, mf_map);
+	auto simskel = DARTUtils::buildFromFile(std::string(ROOT_DIR)+"/data/skel.xml",bvh_map, kp_map, mf_map);
 	mSimCharacter = new Character(simskel);
 
 	for(auto kp : kp_map)
@@ -43,6 +43,7 @@ Environment()
 	std::string locofile_mirror8 = std::string(ROOT_DIR)+"/data/bvh/LocomotionFlat08_000_mirror.bvh";
 	std::string chicken_file = std::string(ROOT_DIR)+"/data/bvh/chicken.bvh";
 	std::string chicken_heavy_file = std::string(ROOT_DIR)+"/data/bvh/chicken_heavy.bvh";
+	std::string manipulation_ball_file = std::string(ROOT_DIR)+"/data/bvh/manipulation_ball.bvh";
 
 
 	auto kinskel = kin::Skeleton::create(base_bvh_file);
@@ -57,12 +58,15 @@ Environment()
 	}
 	//#0 balance
 	// mKinCharacter->addMotion(chicken_file, 100, 630);
-	mKinCharacter->addMotion(chicken_heavy_file, 100, 630);
-	// mKinCharacter->getMotion(0)->repeat(0,100);
 	
-	// mKinCharacter->addMotion(base_bvh_file, 82, 85);
-	// mKinCharacter->getMotion(1)->repeat(0,500);
+	
+	mKinCharacter->addMotion(base_bvh_file, 82, 85);
+	// mKinCharacter->addMotion(manipulation_ball_file, 1, 4);
+	mKinCharacter->getMotion(0)->repeat(0,500);
+	// mKinCharacter->addMotion(manipulation_ball_file, "0:01:00 1:30:00");
+
 	// mKinCharacter->addMotion(base_bvh_file, "0:24:04 1:47:23");
+	
 
 	// mKinCharacter->addMotion(locofile2, 60, 300);
 	// mKinCharacter->addMotion(base_bvh_file, 82, 85);
@@ -70,8 +74,8 @@ Environment()
 	// //walk
 	// mKinCharacter->addMotion(locofile6, 1500, 1950);
 	// mKinCharacter->addMotion(locofile_mirror6, 1500, 1950);
-	// mKinCharacter->addMotion(locofile8, 30, 400);
-	// mKinCharacter->addMotion(locofile_mirror8, 30, 400);
+	// mKinCharacter->addMotion(locofile8, 30, 2700);
+	// mKinCharacter->addMotion(locofile_mirror8, 30, 2700);
 	// //run
 	// mKinCharacter->addMotion(locofile6, 240, 700);
 	// mKinCharacter->addMotion(locofile_mirror6, 240, 700);
@@ -88,23 +92,19 @@ Environment()
 
 
 
-
-	//#1 Push Recovery
-	// mKinCharacter->addMotion(base_bvh_file, 172, 206);
-	// mKinCharacter->getMotion(0)->rotate(M_PI*1.02);
-	// mKinCharacter->getMotion(0)->translate(-Eigen::Vector3d::UnitX()*2.3);
-	// mKinCharacter->addMotion(base_bvh_file, "0:24:04 1:47:23");
-	//#2 walking
-	// mKinCharacter->addMotion(base_bvh_file, "1:44:04 1:47:23");
-
-
 	double dy = dynamic_cast<const BoxShape*>(mSimCharacter->getSkeleton()->getBodyNode("LeftFoot")->getShapeNodesWith<dart::dynamics::VisualAspect>()[0]->getShape().get())->getSize()[1]*0.5;
 	double ground_height = mKinCharacter->computeMinFootHeight() - 4*dy;
 	mGround = DARTUtils::createGround(ground_height);
+
+
+	mRod = DARTUtils::createRod(0.6, 0.05, 0.5);
+	mWeldConstraint = nullptr;
+
 	
 
 	mWorld->getConstraintSolver()->setCollisionDetector(dart::collision::BulletCollisionDetector::create());
 	mWorld->addSkeleton(mSimCharacter->getSkeleton());
+	mWorld->addSkeleton(mRod);
 	mWorld->addSkeleton(mGround);
 	mWorld->setTimeStep(1.0/(double)mSimulationHz);
 	mWorld->setGravity(Eigen::Vector3d(0,-9.81,0.0));
@@ -115,12 +115,6 @@ Environment()
 	int dim_action = getDimAction();
 	mActionSpace = Eigen::VectorXd::Constant(dim_action, M_PI*2);
 	mTask = false;
-	// int stride = 32;
-	// mdTheta = 2*M_PI/(double)stride;
-	// this->setForceFunction(Eigen::VectorXd::Constant(stride, 3.0)+Eigen::VectorXd::Random(stride));
-	// mForceFunction = Eigen::VectorXd::Constant(stride, 10.0);
-	// this->setForceFunction(Eigen::VectorXd::Constant(stride, 10.0));
-
 
 	this->reset();
 }
@@ -155,13 +149,14 @@ Environment::
 getDimAction()
 {
 	int n = mSimCharacter->getSkeleton()->getNumDofs();
-	return n-6;
+	return n-6 + 3 + 3;
 }
 
 void
 Environment::
 reset()
 {
+
 	mContactEOE = false;
 	mEOE = false;
 	mFrame = 0;
@@ -179,6 +174,7 @@ reset()
 	// 	position,rotation,linear_velocity,angular_velocity,position_prev,rotation_prev,42);
 	mKinCharacter->samplePoseFromMotion(0,
 		position,rotation,linear_velocity,angular_velocity,position_prev,rotation_prev);
+	
 	Eigen::VectorXd p,v,p_prev;
 
 	mSimCharacter->computeSimPoseAndVel(position,rotation,linear_velocity,angular_velocity,p,v);
@@ -193,6 +189,43 @@ reset()
 
 	mTargetBodyNode = mSimCharacter->getSkeleton()->getBodyNode("Head");
 	mBodyCenter = mSimCharacter->getReferenceTransform().inverse()*mTargetBodyNode->getCOM();
+
+	Eigen::Vector3d head_com = mSimCharacter->getSkeleton()->getBodyNode("Head")->getCOM();
+	head_com[2] += 0.02;
+	head_com[1] += 0.17;
+	Eigen::Vector6d rod_pos, rod_vel;
+	rod_pos.setZero();
+	rod_vel.setZero();
+	mRodRelativeTransform = mSimCharacter->getSkeleton()->getBodyNode("Head")->getTransform().inverse()*head_com;
+	rod_pos.segment<3>(3) = head_com + 0.3*Eigen::Vector3d::UnitY();
+	mRod->setPositions(rod_pos);
+	mRod->setVelocities(rod_vel);
+	if(mWeldConstraint == nullptr)
+	{
+		
+		mWeldConstraint = std::make_shared<dart::constraint::BallJointConstraint>(mSimCharacter->getSkeleton()->getBodyNode("Head"),
+																				mRod->getBodyNode(0), head_com);
+		mWorld->getConstraintSolver()->addConstraint(mWeldConstraint);
+	}
+
+
+	if(mObstacle == nullptr)
+	{
+		mObstacle = DARTUtils::createBall(1000.0, 0.07, "Free");
+		// mObstacle->getBodyNode(0)->setFrictionCoeff(0.5);
+		mObstacle->getJoint(0)->setDampingCoefficient(0, 0.001);
+		mObstacle->getJoint(0)->setDampingCoefficient(1, 0.001);
+		mObstacle->getJoint(0)->setDampingCoefficient(2, 0.001);
+		mWorld->addSkeleton(mObstacle);
+	}
+	Eigen::Vector6d ball_pos, ball_vel;
+	ball_pos.setZero();
+	ball_vel.setZero();
+	Eigen::Vector3d ball_rand_pos = 0.05*Eigen::Vector3d::Random();
+	ball_rand_pos[1] = 0.0;
+	ball_pos.segment<3>(3) = head_com + 0.7*Eigen::Vector3d::UnitY() + ball_rand_pos;
+	mObstacle->setPositions(ball_pos);
+	mObstacle->setVelocities(ball_vel);
 
 	// double dhat = dart::math::Random::uniform<double>(0.0,1.0);
 	// double dhat = 0.5;
@@ -218,7 +251,8 @@ reset()
 
 	mObstacleCount = 0;
 	// mObstacleCount = 1e6;
-	mObstacleDuration = 99999;
+	mObstacleDuration = 10;
+	mObstacleIdleTime = 10;
 	mContactObstacle = false;
 	mObstacleBodyNode = nullptr;
 
@@ -226,7 +260,7 @@ reset()
 	mCreateObstacle = true;
 	mToggleCount = 0;
 	// mToggleDuration = dart::math::Random::uniform<int>(1, 30);
-	mToggleDuration = 90;
+	mToggleDuration = 30000;
 	// if(dart::math::Random::uniform<double>(0.0,1.0)<0.5)
 	// 	mSimCharacter->toggleLight();
 	// if(dart::math::Random::uniform<double>(0.0, 1.0)<0.5)
@@ -242,13 +276,14 @@ reset()
 	// }
 	
 	
+
 	mObstacleForce = Eigen::Vector3d::Zero();
 	this->updateForceTargetPosition();
-	if(mObstacle!=nullptr){
-		// mWorld->getConstraintSolver()->removeConstraint(mWeldConstraint);
-		mWorld->removeSkeleton(mObstacle);
-		mObstacle=nullptr;
-	}
+	// if(mObstacle!=nullptr){
+	// 	// mWorld->getConstraintSolver()->removeConstraint(mWeldConstraint);
+	// 	mWorld->removeSkeleton(mObstacle);
+	// 	mObstacle=nullptr;
+	// }
 	// if(mCreateObstacle)
 	// 	this->updateObstacle();
 	this->recordState();
@@ -261,7 +296,6 @@ step(const Eigen::VectorXd& action)
 	int num_sub_steps = mSimulationHz/mControlHz;
 
 	bool train = false;
-
 
 	if(mToggleCount>mToggleDuration)
 	{
@@ -320,13 +354,17 @@ step(const Eigen::VectorXd& action)
 	bool contactRF = true;
 	bool contactLF = false;
 	mContactObstacle = false;
-	mObstacleForce = Eigen::Vector3d::Zero();
+	// mObstacleForce = Eigen::Vector3d::Zero();
+
+	int n = mSimCharacter->getSkeleton()->getNumDofs();
+	Eigen::VectorXd action_pos = action.head(n-6);
+	Eigen::Vector6d ghost_force = action.tail<6>();
+
 	for(int i=0;i<num_sub_steps;i++)
 	{
 		mSimCharacter->actuate(action);
 
 		//#2
-
 		if(bn_name.size()!=0){
 
 			mSimCharacter->getSkeleton()->getBodyNode(bn_name)->addExtForce(force2, offset);
@@ -343,6 +381,9 @@ step(const Eigen::VectorXd& action)
 				mTargetBodyNode->addExtForce(mForceTargetPosition, Eigen::Vector3d::Zero());
 			}
 		}
+		if(mObstacleCount<mObstacleDuration)
+			mObstacle->getBodyNode(0)->addExtForce(mObstacleForce, Eigen::Vector3d::Zero());
+		mSimCharacter->addGhostForce(mSimCharacter->getSkeleton()->getBodyNode("Head"), ghost_force);
 		mSimCharacter->step();
 		mWorld->step();
 		// Check EOE
@@ -395,11 +436,16 @@ step(const Eigen::VectorXd& action)
 
 		}
 	}
+	Eigen::Matrix3d Rr = BallJoint::convertToRotation(mRod->getPositions());
+
+	double cos_angle = std::max(-1.0,std::min(1.0,Rr.col(1)[1]));
+	double rod_angle = std::acos(cos_angle)*180.0/M_PI;
+
 	if(mSimCharacter->getSkeleton()->getBodyNode(0)->getCOM()[1]<0.75)
 		mContactEOE = true;
-	if(contactRF ==false && contactLF == false && mFrame > 30)
+	if(rod_angle>90.0)
 		mContactEOE = true;
-	if(contactLF)
+	if(mObstacle->getCOM()[1]<1.5)
 		mContactEOE = true;
 	this->recordState();
 	mPrevPositions2 = mPrevPositions;
@@ -502,35 +548,54 @@ recordState()
 	double ori = mSimCharacter->getReferenceOrientation();
 	double com_ang_vel = kin::Utils::computeAngleDiff(mPrevOrientation, ori)*mControlHz;
 
+	///Compute Task state and reward
+	Eigen::Vector3d ball_pos, ball_vel;
+	ball_pos = T_ref.inverse()*mObstacle->getBodyNode(0)->getCOM();
+	ball_vel = R_ref_inv*(mObstacle->getBodyNode(0)->getCOMLinearVelocity());
+	ball_pos[1] = 0.0;
+	ball_vel[1] = 0.0;
+
+	Eigen::Vector3d rod_pos, rod_vel;
+	rod_pos = T_ref.inverse()*mRod->getBodyNode(1)->getCOM();
+	rod_vel = R_ref_inv*mRod->getBodyNode(1)->getCOMLinearVelocity();
 	
-	mState.resize(state.rows() + 3 + 1);
-	mState<<state, state_position, com_ang_vel;
+	rod_pos[1] = 0.0;
+	rod_vel[1] = 0.0;
+
+	Eigen::Vector3d ball_target_pos_diff;
+
+	ball_target_pos_diff = T_ref.inverse()*com - ball_pos;
+	ball_target_pos_diff[1] = 0.0;
+
+
+	mState.resize(state.rows() + 3 + 1 + 5*3);
+	mState<<state, state_position, com_ang_vel,ball_pos,ball_vel,rod_pos,rod_vel,ball_target_pos_diff;
 
 	double angvel = std::abs(com_ang_vel);
 
 	mRewardPosition = 1.0;
-	if(target_com_vel_local.norm()>0.2)
+	// if(false)
+	if(mObstacleCount<45)
 	{
 		double vel = (target_com_vel_local - MathUtils::projectOnVector(com_vel_local, target_com_vel_local)).norm();
 		double projection = com_vel_local.dot(target_com_vel_local)/target_com_vel_local.dot(target_com_vel_local);
 		projection = std::min(1.0,projection);
 		double vel_diff = 1.0 - projection;
-		mRewardPosition = std::exp(-2.0*vel_diff*vel_diff);
-
-
+		mRewardPosition = std::exp(-1.0*vel_diff*vel_diff);
 		// mRewardPosition = std::exp(-1.5*vel*vel)*std::exp(-0.2*angvel);
-		// std::cout<<"1"<<" "<<mRewardPosition<<std::endl;
 	}
 	else
 	{
 		double vel = com_vel_local.norm();
 
 		// mRewardPosition = std::exp(-5.0*vel*vel)*std::exp(-0.5*angvel);
-		mRewardPosition = std::exp(-3.0*vel*vel);
-		// std::cout<<"2"<<" "<<mRewardPosition<<std::endl;
+		mRewardPosition = std::exp(-2.0*vel*vel);
+		// std::cout<<mRewardPosition<<std::endl;
 	}
-	
-	mRewardPosition = 2.0*mRewardPosition - 1.0;
+	// mRewardPosition = 1.0;
+	mRewardTask = std::exp(-5.0*ball_target_pos_diff.norm());
+	mRewardPosition = mRewardPosition*mRewardTask;
+	// mRewardPosition = 2.0*mRewardPosition - 1.0;
 	Eigen::VectorXd s = mSimCharacter->getStateAMP(mPrevPositions,
 												mPrevPositions2);
 	Eigen::VectorXd s1 = mSimCharacter->getStateAMP(mSimCharacter->getPositions(),
@@ -601,29 +666,50 @@ Environment::
 updateObstacle()
 {
 	mObstacleCount++;
-	if(mObstacleCount<mObstacleDuration)
+	if(mObstacleCount<mObstacleIdleTime)
 		return;
-	if(mObstacle!=nullptr){
-		// mWorld->getConstraintSolver()->removeConstraint(mWeldConstraint);
-		mWorld->removeSkeleton(mObstacle);
-		
-		mObstacle=nullptr;
-	}
+
+	// double mag = 0.7;
+	// double mag = 0.5;
+	// if(mFrame<150)
+	// 	mag += 0.1;
+	// else if(mFrame<600)
+	// 	mag += 0.3;
+	// else
+	// 	mag += 2.0;
+	double mag = 0.0;
+	double theta = dart::math::Random::uniform<double>(0.0, 2*M_PI);
+
+	mObstacleForce = mag*Eigen::Vector3d(std::cos(theta), 0.0, std::sin(theta));
+	mObstacleCount = 0;
+	mObstacleDuration = 10;
+	mObstacleIdleTime = 120;
+	// mObstacleIdleTime = dart::math::Random::uniform<int>(60,90);
+	return;
 	
-	// Eigen::Vector3d size = Eigen::Vector3d::Constant(0.15) + 0.05*Eigen::Vector3d::Random();
-	Eigen::Vector3d com = mSimCharacter->getSkeleton()->getBodyNode(0)->getCOM();
-	Eigen::Vector3d size(2.0, 2.0, 0.4);
-	mObstacle = DARTUtils::createBox(2000.0, size, "Weld");
+	// if(mObstacleCount<mObstacleDuration)
+	// 	return;
+	// if(mObstacle!=nullptr){
+	// 	// mWorld->getConstraintSolver()->removeConstraint(mWeldConstraint);
+	// 	mWorld->removeSkeleton(mObstacle);
+		
+	// 	mObstacle=nullptr;
+	// }
+	
+	// // Eigen::Vector3d size = Eigen::Vector3d::Constant(0.15) + 0.05*Eigen::Vector3d::Random();
+	// Eigen::Vector3d com = mSimCharacter->getSkeleton()->getBodyNode(0)->getCOM();
+	// Eigen::Vector3d size(2.0, 2.0, 0.4);
 
-	Eigen::Vector3d dir = mSimCharacter->getTargetVelocity();
-	double r = dart::math::Random::uniform<double>(1.5, 6.0);
-	dir.normalize();
-	double theta = std::atan2(dir[0],dir[2]);
 
-	Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
-	T.translation() = com + r*dir;
-	T.linear() = Eigen::AngleAxisd(theta,Eigen::Vector3d::UnitY()).toRotationMatrix();
-	dynamic_cast<dart::dynamics::WeldJoint*>(mObstacle->getJoint(0))->setTransformFromParentBodyNode(T);
+	// Eigen::Vector3d dir = mSimCharacter->getTargetVelocity();
+	// double r = dart::math::Random::uniform<double>(1.5, 6.0);
+	// dir.normalize();
+	// double theta = std::atan2(dir[0],dir[2]);
+
+	// Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
+	// T.translation() = com + r*dir;
+	// T.linear() = Eigen::AngleAxisd(theta,Eigen::Vector3d::UnitY()).toRotationMatrix();
+	// dynamic_cast<dart::dynamics::WeldJoint*>(mObstacle->getJoint(0))->setTransformFromParentBodyNode(T);
 	
 
 	// Eigen::VectorXd pos=Eigen::VectorXd::Zero(6);
@@ -657,9 +743,9 @@ updateObstacle()
 	mWorld->addSkeleton(mObstacle);
 	// mWeldConstraint = std::make_shared<dart::constraint::WeldJointConstraint>(mObstacle->getBodyNode(0));
 	// mWorld->getConstraintSolver()->addConstraint(mWeldConstraint);
-	mObstacleCount = 0;
+	// mObstacleCount = 0;
 	// mObstacleDuration = 300;
-	mObstacleDuration = 1e6;
+	// mObstacleDuration = 1e6;
 	// mObstacleDuration = dart::math::Random::uniform<int>(60,90);
 	// mObstacleDuration = 300;
 	// mObstacleDuration = dart::math::Random::uniform<int>(60,90);

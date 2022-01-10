@@ -426,109 +426,28 @@ addExternalForce(dart::dynamics::BodyNode* bn,
 
 
 	return;
+}
+void
+Character::
+addGhostForce(dart::dynamics::BodyNode* bn,
+						const Eigen::Vector6d& force)
+{
+	double h = 1.0/450.0;
+	mAppliedForce = true;
+	Eigen::Vector3d bd_force = force.head<3>();
+	Eigen::Vector3d rt_force = force.tail<3>();
 
-	// int n = mSkeleton->getNumDofs()-6;
-	// Eigen::MatrixXd kp = mKp.tail(n).asDiagonal();
-	// Eigen::MatrixXd kp_inv = mKp.tail(n).cwiseInverse().asDiagonal();
-	// Eigen::MatrixXd J = mSkeleton->getLinearJacobian(bn, offset);
+	mForce = bd_force;
+	mBodyNodeName = bn->getName();
+	rt_force[1] = 0.0;
+	mCurrentBalanceType = this->getBalanceType(mForce);
 	
-	// J = J.rightCols(n);
-	// Eigen::MatrixXd Jt = J.transpose();
-
-	// Eigen::Matrix3d K = (J*kp_inv*J.transpose()).inverse();
-	// Eigen::JacobiSVD<Eigen::Matrix3d> svd(K, Eigen::ComputeFullU | Eigen::ComputeFullV);
-
-	// Eigen::Vector3d d = svd.singularValues();
-	// Eigen::Matrix3d matU = svd.matrixU();
-	// Eigen::Matrix3d matV = svd.matrixV();
-	// d[0] *= mdHat[0];
-	// d[1] *= mdHat[1];
-	// d[2] *= mdHat[2];
-
-	// Eigen::Matrix3d Km = matU*(d.asDiagonal())*(matV.transpose());
-	// Eigen::MatrixXd M_inv = mSkeleton->getInvMassMatrix().bottomRightCorner(n,n);
-	// Eigen::Matrix3d M_work_inv = J*M_inv*Jt;
-
-	// mdU.tail(n) = h*Jt*Km*M_work_inv*force;
-
-	// double root_inv_mass = 0.04;
-	// Eigen::Vector3d root_d_hat = 60.0*mRootdHat;
-
-	// mdU.head<3>() = h*root_inv_mass*root_d_hat.cwiseProduct(force);
-	// mAppliedForce = true;
-	// mOffset = offset;
-	// mForce = force;
-	// mBodyNodeName = bn->getName();
-	// mCurrentBalanceType = this->getBalanceType(mForce);
-
-	// {
-	// 	int n = mSkeleton->getNumDofs()-6;
-	// 	Eigen::MatrixXd kp = mKp.tail(n).asDiagonal();
-	// 	Eigen::MatrixXd kp_inv = mKp.tail(n).cwiseInverse().asDiagonal();
-	// 	Eigen::MatrixXd J = mSkeleton->getLinearJacobian(mSkeleton->getBodyNode("LeftFoot"));
-
-	// 	J = J.rightCols(n);
-	// 	Eigen::MatrixXd Jt = J.transpose();
-
-	// 	Eigen::Matrix3d K = (J*kp_inv*J.transpose()).inverse();
-	// 	Eigen::JacobiSVD<Eigen::Matrix3d> svd(K, Eigen::ComputeFullU | Eigen::ComputeFullV);
-
-	// 	Eigen::Vector3d d = svd.singularValues();
-	// 	Eigen::Matrix3d matU = svd.matrixU();
-	// 	Eigen::Matrix3d matV = svd.matrixV();
-	// 	d[0] *= mdHat[0];
-	// 	d[1] *= mdHat[1];
-	// 	d[2] *= mdHat[2];
-
-	// 	Eigen::Matrix3d Km = matU*(d.asDiagonal())*(matV.transpose());
-	// 	Eigen::MatrixXd M_inv = mSkeleton->getInvMassMatrix().bottomRightCorner(n,n);
-	// 	Eigen::Matrix3d M_work_inv = J*M_inv*Jt;
-
-	// 	mdU.tail(n) += 0.5*h*Jt*Km*M_work_inv*force;
-
-
-	// }
-
-	// {
-	// 	int n = mSkeleton->getNumDofs()-6;
-	// 	Eigen::MatrixXd kp = mKp.tail(n).asDiagonal();
-	// 	Eigen::MatrixXd kp_inv = mKp.tail(n).cwiseInverse().asDiagonal();
-	// 	Eigen::MatrixXd J = mSkeleton->getLinearJacobian(mSkeleton->getBodyNode("RightFoot"));
-
-	// 	J = J.rightCols(n);
-	// 	Eigen::MatrixXd Jt = J.transpose();
-
-	// 	Eigen::Matrix3d K = (J*kp_inv*J.transpose()).inverse();
-	// 	Eigen::JacobiSVD<Eigen::Matrix3d> svd(K, Eigen::ComputeFullU | Eigen::ComputeFullV);
-
-	// 	Eigen::Vector3d d = svd.singularValues();
-	// 	Eigen::Matrix3d matU = svd.matrixU();
-	// 	Eigen::Matrix3d matV = svd.matrixV();
-	// 	d[0] *= mdHat[0];
-	// 	d[1] *= mdHat[1];
-	// 	d[2] *= mdHat[2];
-
-	// 	Eigen::Matrix3d Km = matU*(d.asDiagonal())*(matV.transpose());
-	// 	Eigen::MatrixXd M_inv = mSkeleton->getInvMassMatrix().bottomRightCorner(n,n);
-	// 	Eigen::Matrix3d M_work_inv = J*M_inv*Jt;
-
-	// 	mdU.tail(n) += 0.5*h*Jt*Km*M_work_inv*force;
-	// }
-	// int rknee = mSkeleton->getJoint("RightLeg")->getIndexInSkeleton(0);
-	// int lknee = mSkeleton->getJoint("LeftLeg")->getIndexInSkeleton(0);
-	// mdU[rknee+1] = 0.0;
-	// mdU[rknee+2] = 0.0;
-
-	// mdU[lknee+1] = 0.0;
-	// mdU[lknee+2] = 0.0;
-	// Eigen::VectorXd du_lower_body = 0.4*(J_lf + J_rf).transpose()*(mdU.head<3>());
-	// mdU.segment<3>(3) =	-0.6*du_lower_body.head<3>();
-
-	// mdU.segment<3>(6) += 0.4*du_lower_body.head<3>();
-
-	// mdU.tail(n) += du_lower_body.tail(n);
-
-	
+	mdHat = Eigen::Vector3d::Constant(3000.0);
+	Eigen::MatrixXd J = mSkeleton->getLinearJacobian(bn, Eigen::Vector3d::Zero());
+	J.block<3,3>(0,0).setZero();
+	mdU = h*J.transpose()*mdHat.cwiseProduct(bd_force);
+	double root_inv_mass = 6000.0;
+	mdUroot = h*root_inv_mass*mRootdHat.cwiseProduct(rt_force);
 }
 void
 Character::

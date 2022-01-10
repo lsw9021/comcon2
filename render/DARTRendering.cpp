@@ -42,7 +42,8 @@ drawObstacle(const dart::dynamics::SkeletonPtr& skel,const Option& option)
 		{
 			const auto* sphere = dynamic_cast<const SphereShape*>(shape);
 			glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
-			Eigen::Vector3d color = DrawUtils::stringToRGB("929292");
+			Eigen::Vector3d color = 1.5*DrawUtils::stringToRGB("D94A3D");
+			
 			glColor3f(color[0],color[1],color[2]);
 			DrawUtils::drawSphere(sphere->getRadius(), option.draw_mode);
 
@@ -255,7 +256,8 @@ drawShape(const Eigen::Isometry3d& T,
 		glDisable(GL_LIGHTING);
 		glDisable(GL_TEXTURE_2D);
 		glColor3f(0.0,0.0,0.0);
-		DrawUtils::drawSphere(sphere->getRadius()*1.01,DrawUtils::eDrawWireSimple);
+		if(!mEE)
+			DrawUtils::drawSphere(sphere->getRadius()*1.01,DrawUtils::eDrawWireSimple);
 		glEnable(GL_TEXTURE_2D);
 		glEnable(GL_LIGHTING);
 	}

@@ -40,6 +40,7 @@ public:
 	static dart::dynamics::SkeletonPtr createBox(double density, const Eigen::Vector3d& size, const std::string& type="Free");
 	static dart::dynamics::SkeletonPtr createBall(double density, double r, const std::string& type="Free");
 
+	static dart::dynamics::SkeletonPtr createRod(double len, double width, double plate_radius);
 	static Eigen::MatrixXd computeDiffPositions(const Eigen::MatrixXd& p1, const Eigen::MatrixXd& p2);
 	static std::pair<dart::dynamics::BodyNode*, Eigen::Vector3d> getPointClosestBodyNode(dart::dynamics::SkeletonPtr skel, const Eigen::Vector3d& point);
 };

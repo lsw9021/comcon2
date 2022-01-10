@@ -452,6 +452,36 @@ createBall(double density, double r, const std::string& type)
 	return skel;	
 }
 
+dart::dynamics::SkeletonPtr
+DARTUtils::
+createRod(double len, double width, double plate_radius)
+{
+	SkeletonPtr skel = Skeleton::create("Rod");
+	Eigen::Vector3d rod_size(width,len,width);
+	ShapePtr shape = makeBoxShape(rod_size);
+	double density = 300.0;
+	double mass = density*rod_size[0]*rod_size[1]*rod_size[2];
+	dart::dynamics::Inertia inertia = makeInertia(shape,mass);
+	Joint::Properties* props;
+	props = makeFreeJointProperties("root",Eigen::Isometry3d::Identity(),Eigen::Isometry3d::Identity());
+	auto bn = makeBodyNode(skel,nullptr,props,"Free",inertia);
+	bn->createShapeNodeWith<VisualAspect,DynamicsAspect>(shape);
+
+	Eigen::Vector3d plate_size(plate_radius, 0.01, plate_radius);
+	shape = makeBoxShape(plate_size);
+	mass = density*plate_size[0]*plate_size[1]*plate_size[2];
+	inertia = makeInertia(shape,mass);
+	Eigen::Isometry3d T_pj,T_cj;
+	T_pj.setIdentity();
+	T_cj.setIdentity();
+	T_pj.translation()[1] = 0.5*len;
+
+	props = makeWeldJointProperties("plate",T_pj,T_cj);
+	bn = makeBodyNode(skel,bn,props,"Weld",inertia);
+	bn->createShapeNodeWith<VisualAspect,CollisionAspect,DynamicsAspect>(shape);
+
+	return skel;	
+}
 Eigen::MatrixXd
 DARTUtils::
 computeDiffPositions(const Eigen::MatrixXd& p1, const Eigen::MatrixXd& p2)
