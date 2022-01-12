@@ -112,441 +112,28 @@ GLfloat fogColor[] = {1,1,1,1};
 	glEnd();
 	glEnable(GL_LIGHTING);
 
-	
-	// glColor4f(1.2,0.4,0.4,0.8);DrawUtils::drawArrow3D(Eigen::Vector3d::Zero(), Eigen::Vector3d::UnitX(), 0.2);
-	// glColor4f(0.4,1.2,0.4,0.8);DrawUtils::drawArrow3D(Eigen::Vector3d::Zero(), Eigen::Vector3d::UnitY(), 0.2);
-	// glColor4f(0.4,0.4,1.2,0.8);DrawUtils::drawArrow3D(Eigen::Vector3d::Zero(), Eigen::Vector3d::UnitZ(), 0.2);
 	DARTRendering::drawSkeleton(mEnvironment->getSimCharacter()->getSkeleton(),mSimRenderOption);
-	DARTRendering::drawObstacle(mEnvironment->getRod(),mSimRenderOption);
-	int n = mEnvironment->getSimCharacter()->getSkeleton()->getNumDofs();
-	if(mRenderTargetPosition)
-	{
-		mEnvironment->getSimCharacter()->pushState();
-		Eigen::VectorXd pu = mEnvironment->getSimCharacter()->getPositions();
-		// Eigen::VectorXd p =mEnvironment->getSimCharacter()->computeOriginalPositions(pu);
-		// Eigen::VectorXd p = mEnvironment->getSimCharacter()->computeDisplacedPositions(pu);
-		Eigen::VectorXd p = pu.tail(n);
-		p[5] += 2.0;
-		p[4] += 1.0;
-
-		// p.head<6>().setZero();
-		// p[5] += 2.0;
-		// p[5] += 1.0;
-		
-		mEnvironment->getSimCharacter()->getSkeleton()->setPositions(p);
-
-		DARTRendering::drawSkeleton(mEnvironment->getSimCharacter()->getSkeleton(),mKinRenderOption);
-		mEnvironment->getSimCharacter()->popState();
-	}
-	glEnable(GL_LIGHTING);
-	glPushMatrix();
-	Eigen::Isometry3d T_head = mEnvironment->getSimCharacter()->getSkeleton()->getBodyNode("Head")->getTransform();
-	glMultMatrixd(T_head.data());
-	glColor3f(0.0,0.0,0.0);
-	mGlasses->draw();
-	// glTranslatef(0.0,-0.03,0.0);
-	// glScalef(1.5,1.5,1.5);
-	glColor3f(0.2,0.2,0.2);
-	mHat->draw();
 	
-	// double r = 0.06;
-	// int slices = 16;
-	// double height = 0.1;
-	// double height2 = 0.02;
-	// glTranslatef(0,0.17,-0.02);
-	// for(int i =0;i<slices;i++)
-	// {
-	// 	double theta0 = (i * 2 * M_PI) / slices;
-	// 	double theta1 = ((i + 1) * 2 * M_PI) / slices;
-	// 	double x0 = r*std::cos(theta0);
-	// 	double z0 = r*std::sin(-theta0);
-
-	// 	double x1 = r*std::cos(theta1);
-	// 	double z1 = r*std::sin(-theta1);
-
-	// 	double x0i = 0.7*r*std::cos(theta0);
-	// 	double z0i = 0.7*r*std::sin(-theta0);
-
-	// 	double x1i = 0.7*r*std::cos(theta1);
-	// 	double z1i = 0.7*r*std::sin(-theta1);
-
-	// 	glColor3f(1.5,0.6,0.6);
-	// 	glBegin(GL_QUADS);
-	// 	glVertex3f(x0,-height2,z0);
-	// 	glVertex3f(x1,-height2,z1);
-	// 	glVertex3f(x1i,-height2,z1i);
-	// 	glVertex3f(x0i,-height2,z0i);
-
-	// 	glVertex3f(x0,+height2,z0);
-	// 	glVertex3f(x1,+height2,z1);
-	// 	glVertex3f(x1i,+height2,z1i);
-	// 	glVertex3f(x0i,+height2,z0i);
-
-	// 	glVertex3f(x0,-height2,z0);
-	// 	glVertex3f(x1,-height2,z1);
-	// 	glVertex3f(x1,+height2,z1);
-	// 	glVertex3f(x0,+height2,z0);
-
-	// 	glVertex3f(x1i,-height2,z1i);
-	// 	glVertex3f(x1i,+height2,z1i);
-	// 	glVertex3f(x0i,-height2,z0i);
-	// 	glVertex3f(x0i,+height2,z0i);
-
-
-	// 	glEnd();
-	// }
-	glPopMatrix();
-	Eigen::Vector3d p_rod = mEnvironment->getRod()->getBodyNode(0)->getTransform()*(-0.32*Eigen::Vector3d::UnitY());
+	if(mEnvironment->getObstacle()->getJoint(1)->getDampingCoefficient(0)<100.0)
+		glColor3f(0.0,1.5,0.0);
+	else
+		glColor3f(1.5,0.0,0.0);
+	DARTRendering::drawSkeleton(mEnvironment->getObstacle(),mKinRenderOption);
+	glColor3f(0,0,0);
+	for(int i =0;i<mHandTrajectories.size();i++)
+	{
+		glBegin(GL_LINE_STRIP);
+		for(int j=0;j<mHandTrajectories[i].size();j++)
+			glVertex3f(mHandTrajectories[i][j][0],mHandTrajectories[i][j][1],mHandTrajectories[i][j][2]);
+		glEnd();
+	}
+	
 	glPushMatrix();
-	glColor3f(0.6,0.6,0.6);
-	glTranslatef(p_rod[0],p_rod[1],p_rod[2]);
+	Eigen::Vector3d ps = mEnvironment->getObstacle()->getBodyNode(1)->getTransform()*mLocalBallJointPos;
+	glTranslatef(ps[0],ps[1],ps[2]);
 	DrawUtils::drawSphere(0.05);
-	glDisable(GL_LIGHTING);
-	glDisable(GL_TEXTURE_2D);
-	glColor3f(0.0,0.0,0.0);
-	glLineWidth(1.0);
-	DrawUtils::drawSphere(0.052,DrawUtils::eDrawWireSimple);
-	glEnable(GL_TEXTURE_2D);
-	glEnable(GL_LIGHTING);
 	glPopMatrix();
-	// {
-	// 	Eigen::Isometry3d T_head = mEnvironment->getSimCharacter()->getSkeleton()->getBodyNode("Head")->getTransform();
-	// 	Eigen::Isometry3d T_offset = Eigen::Isometry3d::Identity();
-	// 	T_offset.translation()[1] += 0.07;
-	// 	Eigen::Isometry3d T = T_head*T_offset;
-
-	// 	Eigen::Vector3d e0,ex,ey,ez;
-	// 	e0 = T.translation();
-	// 	ex = T*(0.1*Eigen::Vector3d::UnitX());
-	// 	ey = T*(0.1*Eigen::Vector3d::UnitY());
-	// 	ez = T*(0.1*Eigen::Vector3d::UnitZ());
-
-	// 	// glColor3f(1.5,0,0);
-	// 	// DrawUtils::drawArrow3D(e0, ex, 0.05);
-	// 	// glColor3f(0,1.5,0);
-	// 	// DrawUtils::drawArrow3D(e0, ey, 0.05);
-	// 	// glColor3f(0,0,1.5);
-	// 	// DrawUtils::drawArrow3D(e0, ez, 0.05);
-
-	// 	glPushMatrix();
-	// 	glMultMatrixd(T.data());
-	// 	glColor3f(3,0,0);
-	// 	double r = 0.2;
-	// 	int slices = 16;
-	// 	double height = 0.1;
-	// 	int count = 0;
-	// 	for(int i =0;i<slices;i++)
-	// 	{
-	// 		double theta0 = (i * 2 * M_PI) / slices;
-	// 		double theta1 = ((i + 1) * 2 * M_PI) / slices;
-	// 		double x0 = r*std::cos(theta0);
-	// 		double z0 = r*std::sin(-theta0)+0.015;
-
-	// 		double x1 = r*std::cos(theta1);
-	// 		double z1 = r*std::sin(-theta1)+0.015;
-
-	// 		if(count%2 ==0)
-	// 			glColor3f(1.5,0.0,0.0);
-	// 		else
-	// 			glColor3f(1.8,1.8,1.8);
-	// 		count++;
-	// 		glBegin(GL_TRIANGLES);
-	// 		glVertex3f(x0,0.0,z0);
-	// 		glVertex3f(x1,0.0,z1);
-	// 		glVertex3f(0.0,0.0,0.0);
-
-	// 		glVertex3f(x0,0.0,z0);
-	// 		glVertex3f(x1,0.0,z1);
-	// 		glVertex3f(0.0,height,0.0);
-	// 		glEnd();
-	// 		glLineWidth(3.0);
-
-	// 		glColor3f(0.3,0.3,0.3);
-	// 		glBegin(GL_LINES);
-	// 		glVertex3f(x0,0.0,z0);
-	// 		glVertex3f(x1,0.0,z1);
-	// 		glEnd();
-	// 	}
-	// 	r = 0.09;
-	// 	double height2 = 0.02;
-	// 	for(int i =0;i<slices;i++)
-	// 	{
-	// 		double theta0 = (i * 2 * M_PI) / slices;
-	// 		double theta1 = ((i + 1) * 2 * M_PI) / slices;
-	// 		double x0 = r*std::cos(theta0);
-	// 		double z0 = r*std::sin(-theta0)+0.015;
-
-	// 		double x1 = r*std::cos(theta1);
-	// 		double z1 = r*std::sin(-theta1)+0.015;
-
-	// 		double x0i = 0.7*r*std::cos(theta0);
-	// 		double z0i = 0.7*r*std::sin(-theta0)+0.015;
-
-	// 		double x1i = 0.7*r*std::cos(theta1);
-	// 		double z1i = 0.7*r*std::sin(-theta1)+0.015;
-
-	// 		glColor3f(0.3, 0.3,0.3);
-	// 		glBegin(GL_QUADS);
-	// 		glVertex3f(x0,height-height2,z0);
-	// 		glVertex3f(x1,height-height2,z1);
-	// 		glVertex3f(x1i,height-height2,z1i);
-	// 		glVertex3f(x0i,height-height2,z0i);
-
-	// 		glVertex3f(x0,height+height2,z0);
-	// 		glVertex3f(x1,height+height2,z1);
-	// 		glVertex3f(x1i,height+height2,z1i);
-	// 		glVertex3f(x0i,height+height2,z0i);
-
-	// 		glVertex3f(x0,height-height2,z0);
-	// 		glVertex3f(x1,height-height2,z1);
-	// 		glVertex3f(x1,height+height2,z1);
-	// 		glVertex3f(x0,height+height2,z0);
-
-	// 		glVertex3f(x1i,height-height2,z1i);
-	// 		glVertex3f(x1i,height+height2,z1i);
-	// 		glVertex3f(x0i,height-height2,z0i);
-	// 		glVertex3f(x0i,height+height2,z0i);
-
-
-	// 		glEnd();
-	// 	}
-	// 	r = 0.08;
-	// 	for(int i =0;i<slices;i++)
-	// 	{
-	// 		double theta0 = (i * 2 * M_PI) / slices;
-	// 		double theta1 = ((i + 1) * 2 * M_PI) / slices;
-	// 		double x0 = r*std::cos(theta0);
-	// 		double z0 = r*std::sin(-theta0);
-
-	// 		double x1 = r*std::cos(theta1);
-	// 		double z1 = r*std::sin(-theta1);
-
-	// 		double x0i = 0.7*r*std::cos(theta0);
-	// 		double z0i = 0.7*r*std::sin(-theta0);
-
-	// 		double x1i = 0.7*r*std::cos(theta1);
-	// 		double z1i = 0.7*r*std::sin(-theta1);
-
-	// 		glColor3f(0.3, 0.3,0.3);
-	// 		glBegin(GL_QUADS);
-	// 		glVertex3f(x0,-height2,z0);
-	// 		glVertex3f(x1,-height2,z1);
-	// 		glVertex3f(x1i,-height2,z1i);
-	// 		glVertex3f(x0i,-height2,z0i);
-
-	// 		glVertex3f(x0,+height2,z0);
-	// 		glVertex3f(x1,+height2,z1);
-	// 		glVertex3f(x1i,+height2,z1i);
-	// 		glVertex3f(x0i,+height2,z0i);
-
-	// 		glVertex3f(x0,-height2,z0);
-	// 		glVertex3f(x1,-height2,z1);
-	// 		glVertex3f(x1,+height2,z1);
-	// 		glVertex3f(x0,+height2,z0);
-
-	// 		glVertex3f(x1i,-height2,z1i);
-	// 		glVertex3f(x1i,+height2,z1i);
-	// 		glVertex3f(x0i,-height2,z0i);
-	// 		glVertex3f(x0i,+height2,z0i);
-
-
-	// 		glEnd();
-	// 	}
-	// 	glPopMatrix();
-
-	// 	glPushMatrix();
-	// 	Eigen::Vector3d joint_color = DrawUtils::stringToRGB("222222");
-	// 	Eigen::Vector3d T_joint = T_head*mEnvironment->mRodRelativeTransform;
-	// 	glTranslatef(T_joint[0], T_joint[1], T_joint[2]);
-	// 	double volume = 0.05;
-	// 	glColor3f(0.5,0.5,0.5);
-
-	// 	glColor3f(joint_color[0],joint_color[1],joint_color[2]);
-	// 	glDisable(GL_LIGHTING);
-	// 	glDisable(GL_TEXTURE_2D);
-	// 	DrawUtils::drawSphere(volume);
-	// 	glColor3f(0.0,0.0,0.0);
-	// 	DrawUtils::drawSphere(volume*1.05,DrawUtils::eDrawWireSimple);
-	// 	glEnable(GL_TEXTURE_2D);
-	// 	glEnable(GL_LIGHTING);
-	// 	glPopMatrix();
-	// }
-	DARTRendering::drawObstacle(mEnvironment->getObstacle(),mKinRenderOption);
-
-	if(mEnvironment->isObstacleForced())
-	{
-		Eigen::Vector3d dir = mEnvironment->getObstacleForce();
-		Eigen::Vector3d start = mEnvironment->getObstacle()->getBodyNode(0)->getCOM();
-		glColor4f(1,0,0,1);
-		DrawUtils::drawArrow3D(start, start + 2.0*dir, 0.1);
-
-	}
 	
-	{
-		Eigen::Vector3d end = mEnvironment->getSimCharacter()->getUroot();
-		Eigen::Isometry3d T_ref = mEnvironment->getSimCharacter()->getReferenceTransform();
-		glColor4f(0,1,0,1);
-		// DrawUtils::drawArrow3D(T_ref.translation()+0.1*Eigen::Vector3d::UnitY(), T_ref.translation()+0.1*Eigen::Vector3d::UnitY()+end, 0.08);
-	}
-	{
-		Eigen::Vector6d ghost_force = mAction.tail<6>();
-		Eigen::Vector3d bd_force = ghost_force.head<3>();
-		Eigen::Vector3d rt_force = ghost_force.tail<3>();
-
-		Eigen::Vector3d start = mEnvironment->getSimCharacter()->getSkeleton()->getBodyNode("Head")->getCOM();
-
-		// DrawUtils::drawArrow3D(start, start + 10.0*bd_force, 0.08);
-	}
-	
-
-	// for(int i=0;i<mCOMTrajectories.size();i++)
-	// {
-	// 	glColor4f(mDhats[i],0,0,1);
-	// 	glBegin(GL_LINE_STRIP);
-	// 	for(int j=0;j<mCOMTrajectories[i].size();j++)
-	// 	{
-	// 		glVertex3f(mCOMTrajectories[i][j][0],0.1,mCOMTrajectories[i][j][2]);
-	// 	}
-	// 	glEnd();
-	// }
-
-	// {
-	// 	int stride = 64;
-	// 	Eigen::Isometry3d T_ref = mEnvironment->getSimCharacter()->getReferenceTransform();
-	// 	glPushMatrix();
-	// 	DrawUtils::transform(T_ref);
-	// 	glBegin(GL_TRIANGLE_FAN);
-	// 	glVertex3f(0.0,1.0,0.0);
-	// 	for(int i =0;i<stride+1;i++)
-	// 	{
-	// 		double phi = 2*M_PI/(double)stride*i;
-
-	// 		double val = mEnvironment->getMaxForce(phi);
-	// 		Eigen::Vector3d force = val*Eigen::Vector3d(std::cos(phi),0.0, std::sin(phi));
-	// 		glVertex3f(force[0],1.0,force[2]);
-	// 	}	
-	// 	glEnd();
-	// 	glPopMatrix();
-	// }
-	// {
-	// 	auto skel = mEnvironment->getSimCharacter()->getSkeleton();
-	// 	Eigen::VectorXd forces = mEnvironment->getSimCharacter()->getCummulatedForces();
-	// 	int lf = skel->getJoint("LeftFoot")->getIndexInSkeleton(0);
-	// 	int rf = skel->getJoint("RightFoot")->getIndexInSkeleton(0);
-
-	// 	Eigen::Vector3d tlf, trf;
-	// 	tlf = forces.segment<3>(lf);
-	// 	trf = forces.segment<3>(rf);
-
-	// 	Eigen::Isometry3d Tplf, Tprf;
-	// 	Tplf = skel->getBodyNode("LeftFoot")->getParentBodyNode()->getTransform();
-	// 	Tprf = skel->getBodyNode("RightFoot")->getParentBodyNode()->getTransform();
-
-	// 	Eigen::Isometry3d Tlf, Trf;
-	// 	Tlf = skel->getBodyNode("LeftFoot")->getTransform()*skel->getJoint("LeftFoot")->getTransformFromChildBodyNode();
-	// 	Trf = skel->getBodyNode("RightFoot")->getTransform()*skel->getJoint("RightFoot")->getTransformFromChildBodyNode();
-
-	// 	tlf = Tplf.linear()*tlf;
-	// 	trf = Tprf.linear()*trf;
-
-	// 	Eigen::Vector3d dlf = tlf.normalized();
-	// 	Eigen::Vector3d drf = trf.normalized();
-	// 	// std::cout<<tlf<<std::endl;
-		
-
-
-	// 	glPushMatrix();
-	// 	DrawUtils::translate(Tlf.translation());
-	// 	DrawUtils::translate(0.1*Eigen::Vector3d::UnitX());
-
-	// 	// DrawUtils::rotate(std::acos(dlf[1]), dlf.cross(Eigen::Vector3d::UnitY()));
-	// 	DrawUtils::scale(0.15);
-	// 	glPushMatrix();
-	// 	DrawUtils::rotate(M_PI*0.5, Eigen::Vector3d::UnitZ());
-	// 	glColor3f(5.0,0.0,0.0);
-	// 	if(tlf[0]>0.0)
-	// 		DrawUtils::drawCircleArrow(0.15, 0.0,M_PI*tlf[0]/300.0);
-	// 	else
-	// 		DrawUtils::drawCircleArrow(0.15, M_PI*tlf[0]/300.0,0.0);
-
-	// 	glPopMatrix();
-
-	// 	// glPushMatrix();
-	// 	// glColor3f(0.0,5.0,0.0);
-	// 	// DrawUtils::drawCircleArrow(0.1, 0.0,2*M_PI*tlf[1]/100.0);
-	// 	// glPopMatrix();
-
-	// 	// glPushMatrix();
-	// 	// DrawUtils::rotate(M_PI*0.5, Eigen::Vector3d::UnitX());
-	// 	// glColor3f(0.0,0.0,5.0);
-	// 	// DrawUtils::drawCircleArrow(0.1, 0.0,2*M_PI*tlf[2]/100.0);
-	// 	// glPopMatrix();
-
-	// 	glPopMatrix();
-	// }
-	
-
-	// {
-	// 	Eigen::Vector3d end = Eigen::Vector3d::UnitZ()*100.0;
-	// 	Eigen::Vector3d start = -Eigen::Vector3d::UnitZ()*100.0;
-	// 	glColor4f(0,0,0,1);
-	// 	DrawUtils::drawArrow3D(start, end, 0.2);
-	// }
-
-	if(mRenderContactForce)
-	{
-		auto world = mEnvironment->getWorld();	
-		auto cr = world->getConstraintSolver()->getLastCollisionResult();
-		for(int j=0;j<cr.getNumContacts();j++)
-		{
-			auto contact = cr.getContact(j);
-			
-			Eigen::Vector3d end = contact.force*0.001 + contact.point;
-			Eigen::Vector3d start = contact.point;
-			glColor4f(1,0,0,0.6);
-			DrawUtils::drawArrow3D(start, end, 0.08);
-			glColor4f(0,0,0,1.0);
-		}
-	}
-	if(mTargetBodyNode!=nullptr)
-	{
-		Eigen::Vector3d end = mTargetPosition;
-		Eigen::Vector3d start = mTargetBodyNode->getTransform()*mTargetLocalPosition;
-		DrawUtils::drawArrow3D(start, end, 0.04);
-	}
-
-	// 	Eigen::Matrix3d K = mEnvironment->getSimCharacter()->computeStiffnessMatrix(mTargetBodyNode, mTargetLocalPosition);
-
-	// 	Eigen::JacobiSVD<Eigen::Matrix3d> svd(K, Eigen::ComputeFullU | Eigen::ComputeFullV);
-	// 	Eigen::Vector3d d = svd.singularValues();
-	// 	Eigen::Matrix3d matU = svd.matrixU();
-	// 	Eigen::Matrix3d matV = svd.matrixV();
-	// 	d = d.cwiseInverse();
-	// 	for(int i =0;i<3;i++)
-	// 		if(d[i]>1e6)
-	// 			d[i] = 0.0;
-	// 	d*=1e3;
-	// 	Eigen::Matrix3d R = matU;
-	// 	glColor4f(1,0,0,1);
-	// 	end = R.col(0);
-	// 	DrawUtils::drawArrow3D(start, start+end*d[0], 0.06);
-	// 	DrawUtils::drawArrow3D(start, start-end*d[0], 0.06);
-	// 	glColor4f(0,1,0,1);
-	// 	end = R.col(1);
-	// 	DrawUtils::drawArrow3D(start, start+end*d[1], 0.06);
-	// 	DrawUtils::drawArrow3D(start, start-end*d[1], 0.06);
-	// 	glColor4f(0,0,1,1);
-	// 	end = R.col(2);
-	// 	DrawUtils::drawArrow3D(start, start+end*d[2], 0.06);
-	// 	DrawUtils::drawArrow3D(start, start-end*d[2], 0.06);
-	// }
-
-
-
-	// float y = mEnvironment->getGround()->getBodyNode(0)->getTransform().translation()[1] +
-	// 		dynamic_cast<const BoxShape*>(mEnvironment->getGround()->getBodyNode(0)->getShapeNodesWith<VisualAspect>()[0]->getShape().get())->getSize()[1]*0.5;
-
-	// DrawUtils::drawGround(y,100.0);
 	
 	if(mCapture)
 		this->capture_screen();
@@ -566,7 +153,8 @@ reset()
 		std::cout<<runner.attr("force_index").cast<double>()<<std::endl;
 	}
 	mAction = Eigen::VectorXd::Zero(mEnvironment->getDimAction());
-
+	mHandTrajectories.emplace_back(std::vector<Eigen::Vector3d>());
+	mLocalBallJointPos = mEnvironment->getObstacle()->getBodyNode(1)->getTransform().inverse()*mEnvironment->mBallJointPos;
 }
 void
 Window::
@@ -588,19 +176,24 @@ step()
 	}
 	mEnvironment->step(action);
 
+	if(mEnvironment->mFrame>=17 && mEnvironment->mFrame<=51)
+	{
+		mHandTrajectories.back().emplace_back(mEnvironment->getSimCharacter()->getSkeleton()->getBodyNode("RightHand")->getCOM());
+	}
+
 	if(mFocus)
 	{
 		Eigen::Vector3d com = mEnvironment->getSimCharacter()->getSkeleton()->getBodyNode(0)->getCOM();	
 		com[1] = 1.0;
 		mCamera->setLookAt(com);
-		mCamera->setEye( com + Eigen::Vector3d(3.0,1.0,3.0));
+		mCamera->setEye( com + Eigen::Vector3d(3.0,0.0,-3.0));
 	}
 	
 	
 
 	// Eigen::VectorXd s_amp = mEnvironment->getStateAMP();
-	// if(mEnvironment->eoe())
-	// 	this->reset();
+	if(mEnvironment->eoe())
+		this->reset();
 }
 
 void

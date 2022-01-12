@@ -68,6 +68,8 @@ protected:
 	OBJ* mGlasses;
 
 	Eigen::VectorXd mAction;
+	std::vector<std::vector<Eigen::Vector3d>> mHandTrajectories;
+	Eigen::Vector3d mLocalBallJointPos;
 };
 
 

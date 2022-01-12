@@ -58,16 +58,7 @@ drawObstacle(const dart::dynamics::SkeletonPtr& skel,const Option& option)
 		{
 			const auto* box = dynamic_cast<const BoxShape*>(shape);
 			glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
-			Eigen::Vector3d color = DrawUtils::stringToRGB("929292");
-			glColor3f(color[0],color[1],color[2]);
 			DrawUtils::drawBox(Eigen::Vector3d::Zero(), box->getSize(), option.draw_mode);
-			glDisable(GL_LIGHTING);
-			glDisable(GL_TEXTURE_2D);
-			glColor3f(0.0,0.0,0.0);
-			DrawUtils::drawBox(Eigen::Vector3d::Zero(), box->getSize(), DrawUtils::eDrawWireSimple);
-			glEnable(GL_TEXTURE_2D);
-			glEnable(GL_LIGHTING);
-	    	
 		}
 
 		glPopMatrix();

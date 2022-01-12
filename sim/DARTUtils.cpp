@@ -108,7 +108,7 @@ makeRevoluteJointProperties(const std::string& name,const Eigen::Vector3d& axis,
 	props->mVelocityUpperLimits = Eigen::Vector1d::Constant(100.0);
 	props->mForceLowerLimits = Eigen::Vector1d::Constant(-1000.0); 
 	props->mForceUpperLimits = Eigen::Vector1d::Constant(1000.0);
-	props->mDampingCoefficients = Eigen::Vector1d::Constant(0.4);
+	props->mDampingCoefficients = Eigen::Vector1d::Constant(0.0);
 
 	return props;
 }
@@ -372,8 +372,60 @@ createGround(double y)
 }
 dart::dynamics::SkeletonPtr
 DARTUtils::
+createDoor(const Eigen::Isometry3d& T_ref,double w0,double w1,double mass)
+{
+	double depth = 0.05;
+	double height = 2.0;
+	Eigen::Vector3d size0 = Eigen::Vector3d(w0, height, depth);
+	Eigen::Vector3d size1 = Eigen::Vector3d(w1, height, depth);
+
+	SkeletonPtr skel = Skeleton::create("door");
+	ShapePtr shape0 = makeBoxShape(size0);
+	ShapePtr shape1 = makeBoxShape(size1);
+
+	double mass0 = 100.0;
+	double mass1 = mass;
+
+	dart::dynamics::Inertia inertia0 = makeInertia(shape0,mass0);
+	dart::dynamics::Inertia inertia1 = makeInertia(shape1,mass1);
+
+	Eigen::Isometry3d T_pj = Eigen::Isometry3d::Identity();
+	Eigen::Isometry3d T_pjl = Eigen::Isometry3d::Identity();
+	Eigen::Isometry3d T_cj = Eigen::Isometry3d::Identity();
+	T_pjl.translation() = Eigen::Vector3d(-0.5*w0, 0.5*height, 0.0);
+	T_pj = T_ref*T_pjl;
+
+	Joint::Properties* props = makeWeldJointProperties("base",T_pj,T_cj);
+	auto bn = makeBodyNode(skel,nullptr,props,"Weld",inertia0);
+
+	bn->createShapeNodeWith<VisualAspect,DynamicsAspect>(shape0);
+
+	T_pj.setIdentity();
+	T_pjl.setIdentity();
+	T_cj.setIdentity();
+	T_pjl.translation() = Eigen::Vector3d(-0.5*w0,0.0, 0.0);
+	T_pj = T_pjl;
+	T_cj.translation() = Eigen::Vector3d(0.5*w1,0.0,0.0);
+
+	props = makeRevoluteJointProperties("door",Eigen::Vector3d::UnitY(),T_pj,T_cj,Eigen::Vector1d(-2.0),Eigen::Vector1d(2.0));
+	bn = makeBodyNode(skel,bn,props,"Revolute",inertia0);
+
+	// bn->createShapeNodeWith<VisualAspect,CollisionAspect,DynamicsAspect>(shape1);
+	bn->createShapeNodeWith<VisualAspect,CollisionAspect,DynamicsAspect>(shape1);
+	skel->getJoint(1)->setSpringStiffness(0, 0.0);
+	skel->getJoint(1)->setDampingCoefficient(0, 0.0);
+	return skel;
+
+
+}
+dart::dynamics::SkeletonPtr
+DARTUtils::
 createDoor(const Eigen::Vector3d& c0, double width)
 {
+
+
+
+
 	double depth = 0.05;
 	double height = 2.0;
 	double base_ratio = 2.0;

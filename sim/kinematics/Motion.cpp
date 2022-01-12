@@ -35,6 +35,29 @@ repeat(int frame, int num)
 }
 void
 Motion::
+repeatLastFrame(int num)
+{
+	Eigen::Vector3d pos = mPositions.back();
+	Eigen::MatrixXd rot = mRotations.back();
+
+	std::vector<Eigen::Vector3d> poss(num);
+	std::vector<Eigen::MatrixXd> rots(num);
+
+	for(int i=0;i<num;i++)
+		poss[i] = pos;
+
+	for(int i=0;i<num;i++)
+		rots[i] = rot;
+
+	mPositions.insert(mPositions.end(), poss.begin(), poss.end());
+	mRotations.insert(mRotations.end(), rots.begin(), rots.end());
+
+	std::vector<Eigen::Vector3d> _pos = mPositions;
+	std::vector<Eigen::MatrixXd> _rot = mRotations;
+	this->set(_pos, _rot);
+}
+void
+Motion::
 rotate(double y)
 {
 	Eigen::Matrix3d Ry = Eigen::AngleAxisd(y, Eigen::Vector3d::UnitY()).toRotationMatrix();

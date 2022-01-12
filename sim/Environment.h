@@ -52,12 +52,11 @@ public:
 	void forceCreateObstacle(){mObstacleCount = 999999;}
 
 	dart::dynamics::SkeletonPtr getObstacle(){return mObstacle;}
-	dart::dynamics::SkeletonPtr getRod(){return mRod;}
 
 	const Eigen::Vector3d& getObstacleForce(){return mObstacleForce;}
 	bool isObstacleForced(){return mObstacleCount<mObstacleDuration;}
 	Eigen::Vector3d mRodRelativeTransform;
-private:
+public:
 	void recordState();
 
 	Eigen::VectorXd convertToRealActionSpace(const Eigen::VectorXd& a_normalized);
@@ -104,10 +103,11 @@ private:
 
 	dart::constraint::BallJointConstraintPtr mWeldConstraint;
 
-	dart::dynamics::SkeletonPtr mRod;
-
-	// double mdTheta;
-	// Eigen::VectorXd mForceFunction;
+	double mPhaseDenom;
+	Eigen::Vector3d mBallJointPos = Eigen::Vector3d(0.449879,1.12146,0.558332);
+	double mDoorMass;
+	double mDoorSize;
+	double mDoorKd;
 };
 
 #endif
