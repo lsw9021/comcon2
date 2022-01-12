@@ -162,8 +162,8 @@ reset()
 
 	double door_x = dart::math::Random::uniform<double>(-0.3, -0.05);
 	double door_y = dart::math::Random::uniform<double>(-0.2, 0.2);
-	door_x = -0.1;
-	door_y = 0.0;
+	// door_x = -0.1;
+	// door_y = 0.0;
 	mBallJointPos = Eigen::Vector3d(0.449879,1.12146,0.558332);
 	mBallJointPos[0] += door_x;
 	mBallJointPos[1] += door_y;
@@ -230,8 +230,8 @@ step(const Eigen::VectorXd& action)
 	{
 		mSimCharacter->actuate(action);
 
-		mSimCharacter->addGhostForce(mSimCharacter->getSkeleton()->getBodyNode("RightHand"), ghost_force);
-		mSimCharacter->step();
+		// mSimCharacter->addGhostForce(mSimCharacter->getSkeleton()->getBodyNode("RightHand"), ghost_force);
+		// mSimCharacter->step();
 		mWorld->step();
 		// Check EOE
 		
