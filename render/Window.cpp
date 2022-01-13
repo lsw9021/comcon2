@@ -127,7 +127,21 @@ GLfloat fogColor[] = {1,1,1,1};
 			glVertex3f(mHandTrajectories[i][j][0],mHandTrajectories[i][j][1],mHandTrajectories[i][j][2]);
 		glEnd();
 	}
+
+	{
+		Eigen::Vector3d dir = Eigen::Vector3d::Zero();
+		int n = mConstraintForces.size();
+		for(int i=0;i<5;i++)
+		{
+			dir += mConstraintForces[n-1-i];
+		}
+		Eigen::Vector3d start = mEnvironment->getSimCharacter()->getSkeleton()->getBodyNode("RightHand")->getCOM();
+		glColor3f(1.5,0,0);
+		DrawUtils::drawArrow3D(start, start + dir*0.0001, 0.08);
+		glColor3f(0,0,0);
+	}
 	
+
 	if(mRenderTargetPosition)
 	{
 		mEnvironment->getSimCharacter()->pushState();
@@ -166,6 +180,9 @@ reset()
 	}
 	mAction = Eigen::VectorXd::Zero(mEnvironment->getDimAction());
 	mHandTrajectories.emplace_back(std::vector<Eigen::Vector3d>());
+	mConstraintForces.clear();
+	for(int i=0;i<5;i++)
+		mConstraintForces.emplace_back(Eigen::Vector3d::Zero());
 	mLocalBallJointPos = mEnvironment->getObstacle()->getBodyNode(1)->getTransform().inverse()*mEnvironment->mBallJointPos;
 }
 void
@@ -188,6 +205,7 @@ step()
 	}
 	mEnvironment->step(action);
 
+	mConstraintForces.emplace_back(mEnvironment->mConstraintForce);
 	if(mEnvironment->mFrame>=17 && mEnvironment->mFrame<=51)
 	{
 		mHandTrajectories.back().emplace_back(mEnvironment->getSimCharacter()->getSkeleton()->getBodyNode("RightHand")->getCOM());

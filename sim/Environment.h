@@ -56,6 +56,7 @@ public:
 	const Eigen::Vector3d& getObstacleForce(){return mObstacleForce;}
 	bool isObstacleForced(){return mObstacleCount<mObstacleDuration;}
 	Eigen::Vector3d mRodRelativeTransform;
+	Eigen::Vector3d mConstraintForce;
 public:
 	void recordState();
 

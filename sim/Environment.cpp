@@ -231,11 +231,7 @@ step(const Eigen::VectorXd& action)
 		mWorld->getConstraintSolver()->removeConstraint(mWeldConstraint);
 		mWeldConstraint = nullptr;
 	}
-	if(mWeldConstraint != nullptr)
-	{
-
-	}
-	ghost_force.head<3>() = 0.1*Eigen::Vector3d::UnitZ();
+	mConstraintForce.setZero();
 	for(int i=0;i<num_sub_steps;i++)
 	{
 		mSimCharacter->actuate(action);
@@ -243,6 +239,12 @@ step(const Eigen::VectorXd& action)
 		mSimCharacter->addGhostForce(mSimCharacter->getSkeleton()->getBodyNode("RightHand"), ghost_force);
 		mSimCharacter->step();
 		mWorld->step();
+
+		Eigen::Vector3d fc = (mSimCharacter->getSkeleton()->getBodyNode("RightHand")->getConstraintImpulse()*mSimulationHz).tail<3>();
+		Eigen::Isometry3d Tlh = mSimCharacter->getSkeleton()->getBodyNode("RightHand")->getTransform();
+		fc = Tlh.linear()*fc;
+		
+		mConstraintForce += fc;
 		// Check EOE
 		
 		auto cr = mWorld->getConstraintSolver()->getLastCollisionResult();

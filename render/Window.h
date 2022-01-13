@@ -70,6 +70,8 @@ protected:
 	Eigen::VectorXd mAction;
 	std::vector<std::vector<Eigen::Vector3d>> mHandTrajectories;
 	Eigen::Vector3d mLocalBallJointPos;
+
+	std::vector<Eigen::Vector3d> mConstraintForces;
 };
 
 
