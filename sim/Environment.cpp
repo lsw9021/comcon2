@@ -160,14 +160,21 @@ reset()
 	Td.linear() = Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitY()).toRotationMatrix();
 	Td.translation() = Eigen::Vector3d(-1.58,0.0,0.65);
 
-	double door_x = dart::math::Random::uniform<double>(-0.3, -0.05);
-	double door_y = dart::math::Random::uniform<double>(-0.2, 0.2);
+	double door_x = dart::math::Random::uniform<double>(-0.2, -0.05);
+	double door_y = dart::math::Random::uniform<double>(-0.1, 0.1);
 	// door_x = -0.1;
 	// door_y = 0.0;
 	mBallJointPos = Eigen::Vector3d(0.449879,1.12146,0.558332);
 	mBallJointPos[0] += door_x;
 	mBallJointPos[1] += door_y;
 	mDoorSize = 2.0*dart::math::Random::uniform<double>(0.3, 0.9);
+
+	double Tdx = dart::math::Random::uniform<double>(-0.3,0.0);
+	double Tdz = dart::math::Random::uniform<double>(0.0,0.3);
+	// Td.translation()[0] += Tdx;
+	// Td.translation()[2] += Tdz;
+	// mBallJointPos[0] += Tdx;
+	// mBallJointPos[2] += Tdz;
 	// mDoorSize = 2.0*0.5;
 	double w0 = 2.0 - mDoorSize;
 	//[0.6,1.8]
@@ -225,13 +232,13 @@ step(const Eigen::VectorXd& action)
 		mWeldConstraint = nullptr;
 	}
 
-
+	ghost_force.head<3>() = 0.1*Eigen::Vector3d::UnitZ();
 	for(int i=0;i<num_sub_steps;i++)
 	{
 		mSimCharacter->actuate(action);
 
-		// mSimCharacter->addGhostForce(mSimCharacter->getSkeleton()->getBodyNode("RightHand"), ghost_force);
-		// mSimCharacter->step();
+		mSimCharacter->addGhostForce(mSimCharacter->getSkeleton()->getBodyNode("RightHand"), ghost_force);
+		mSimCharacter->step();
 		mWorld->step();
 		// Check EOE
 		
@@ -399,18 +406,22 @@ recordState()
 	double com_ang_vel = kin::Utils::computeAngleDiff(mPrevOrientation, ori)*mControlHz;
 
 	Eigen::Vector3d ball_joint_pos_local = T_ref.inverse()*mBallJointPos;
+	Eigen::Vector3d ball_joint_pos_local_diff = ball_joint_pos_local - T_ref.inverse()*(mSimCharacter->getSkeleton()->getBodyNode("RightHand")->getCOM());
 	double door_angle = mObstacle->getPositions()[0];
 	
 	// mState.resize(state.rows() + 3 + 1);
 	// mState<<state, state_position, com_ang_vel;
-	mState.resize(state.rows() + 3 + 1 + 3 + 1 + 3);
-	mState<<state, state_position, com_ang_vel, door_angle, mDoorSize, mDoorMass, mDoorKd, ball_joint_pos_local;
+	// mState.resize(state.rows() + 3 + 1 + 3 + 1 + 3);
+	mState.resize(state.rows() + 3 + 1 + 3 + 1 + 3 + 3);
+	// mState<<state, state_position, com_ang_vel, door_angle, mDoorSize, mDoorMass, mDoorKd, ball_joint_pos_local;
+	mState<<state, state_position, com_ang_vel, door_angle, mDoorSize, mDoorMass, mDoorKd, ball_joint_pos_local, ball_joint_pos_local_diff;
 	// mState.resize(state.rows() + 3 + 1 + 4);
 	// mState<<state, state_position, com_ang_vel, door_angle, mDoorSize, mDoorMass,mDoorKd;
 
 	double angvel = std::abs(com_ang_vel);
 
 	mRewardPosition = 1.0;
+
 	// if(false)
 	if(mObstacleCount<45)
 	{
@@ -433,7 +444,10 @@ recordState()
 	door_angle = std::min(0.7,door_angle);
 	double door_error = 0.7 - door_angle;
 
-	mRewardTask = std::exp(-1.0*door_error);
+	if(mFrame<=17)
+		mRewardTask = std::exp(-1.0*ball_joint_pos_local_diff.norm());
+	else
+		mRewardTask = std::exp(-1.0*door_error);
 
 	mRewardPosition = mRewardPosition*mRewardTask;
 	Eigen::VectorXd s = mSimCharacter->getStateAMP(mPrevPositions,

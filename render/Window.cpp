@@ -128,6 +128,18 @@ GLfloat fogColor[] = {1,1,1,1};
 		glEnd();
 	}
 	
+	if(mRenderTargetPosition)
+	{
+		mEnvironment->getSimCharacter()->pushState();
+		Eigen::VectorXd pu = mEnvironment->getSimCharacter()->getPositions();
+		Eigen::VectorXd p = mEnvironment->getSimCharacter()->computeDisplacedPositions(pu);
+		
+		mEnvironment->getSimCharacter()->getSkeleton()->setPositions(p);
+
+		DARTRendering::drawSkeleton(mEnvironment->getSimCharacter()->getSkeleton(),mKinRenderOption);
+		mEnvironment->getSimCharacter()->popState();
+	}
+	
 	glPushMatrix();
 	Eigen::Vector3d ps = mEnvironment->getObstacle()->getBodyNode(1)->getTransform()*mLocalBallJointPos;
 	glTranslatef(ps[0],ps[1],ps[2]);
@@ -192,8 +204,8 @@ step()
 	
 
 	// Eigen::VectorXd s_amp = mEnvironment->getStateAMP();
-	if(mEnvironment->eoe())
-		this->reset();
+	// if(mEnvironment->eoe())
+	// 	this->reset();
 }
 
 void

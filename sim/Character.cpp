@@ -442,9 +442,14 @@ addGhostForce(dart::dynamics::BodyNode* bn,
 	rt_force[1] = 0.0;
 	mCurrentBalanceType = this->getBalanceType(mForce);
 	
-	mdHat = Eigen::Vector3d::Constant(3000.0);
+	// mdHat = Eigen::Vector3d::Constant(6000.0);
+	mdHat = Eigen::Vector3d::Constant(6000.0);
 	Eigen::MatrixXd J = mSkeleton->getLinearJacobian(bn, Eigen::Vector3d::Zero());
 	J.block<3,3>(0,0).setZero();
+	int idx = mSkeleton->getJoint("Spine1")->getIndexInSkeleton(0);
+	// J.block<3,3>(0,idx) *= 2.0;
+	idx = mSkeleton->getJoint("RightArm")->getIndexInSkeleton(0);
+	// J.block<3,3>(0,idx) *= 2.0;
 	mdU = h*J.transpose()*mdHat.cwiseProduct(bd_force);
 	double root_inv_mass = 6000.0;
 	mdUroot = h*root_inv_mass*mRootdHat.cwiseProduct(rt_force);
