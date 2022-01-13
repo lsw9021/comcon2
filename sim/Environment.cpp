@@ -231,7 +231,10 @@ step(const Eigen::VectorXd& action)
 		mWorld->getConstraintSolver()->removeConstraint(mWeldConstraint);
 		mWeldConstraint = nullptr;
 	}
+	if(mWeldConstraint != nullptr)
+	{
 
+	}
 	ghost_force.head<3>() = 0.1*Eigen::Vector3d::UnitZ();
 	for(int i=0;i<num_sub_steps;i++)
 	{
